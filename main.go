@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
+	"my_eagle/api/folder"
+	"my_eagle/api/item"
 	"my_eagle/database"
-	"my_eagle/folder"
-	"my_eagle/item"
 
 	"github.com/gin-gonic/gin"
 )
