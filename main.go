@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	var err = database.Database_init("")
+	_, err := database.Database_init("test")
 
 	if err != nil {
 		log.Fatalf("failed init database: %v", err)

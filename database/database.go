@@ -32,8 +32,8 @@ type Item struct {
 	Tags    []Tag    `gorm:"many2many:item_tags;"`    // Tags
 	Folders []Folder `gorm:"many2many:item_folders;"` // 文件夹ID列表
 
-	Palettes []uint32 `json:"palettes"` // 色票（这是什么？）
-	Star     uint8    `json:"star"`     // 星级评分
+	// Palettes []uint32 `json:"palettes"` // 色票（这是什么？）
+	Star uint8 `json:"star"` // 星级评分
 
 	NoThumbnail   bool   `json:"no_thumbnail"`   // 是否有缩略图
 	NoPreview     bool   `json:"no_preview"`     // 是否有预览图
@@ -49,8 +49,8 @@ type Folder struct {
 	ModifiedAt time.Time      `json:"modified_at"` // 修改时间
 	DeletedAt  gorm.DeletedAt `json:"deleted_at"`  // 删除时间
 
-	ParentID uuid.UUID `json:"parent"` // 父文件夹
-	Parent   *Folder   `gorm:"foreignKey:ParentID"`
+	ParentID uuid.UUID `json:"parent"`              // 父文件夹 ID
+	Parent   *Folder   `gorm:"foreignKey:ParentID"` // 父文件夹
 	Children []Folder  `gorm:"foreignKey:ParentID"` // 子文件夹
 
 	Name        string `json:"name"`
@@ -69,8 +69,8 @@ type Tag struct {
 	ModifiedAt time.Time      `json:"modified_at"` // 修改时间
 	DeletedAt  gorm.DeletedAt `json:"deleted_at"`  // 删除时间
 
-	ParentID uuid.UUID `json:"parent"` // 父Tag
-	Parent   *Folder   `gorm:"foreignKey:ParentID"`
+	ParentID uuid.UUID `json:"parent"`              // 父Tag ID
+	Parent   *Folder   `gorm:"foreignKey:ParentID"` // 父Tag
 	Children []Folder  `gorm:"foreignKey:ParentID"` // 子Tag
 
 	Name        string `json:"name"`
@@ -83,9 +83,9 @@ type Tag struct {
 	IsExpand bool `json:"is_expand"`
 }
 
-var db *gorm.DB
+var DB *gorm.DB
 
-func Database_init(library_dir string) error {
+func Database_init(library_dir string) (*gorm.DB, error) {
 	var err error
 
 	// 创建数据库存储路径
@@ -100,11 +100,11 @@ func Database_init(library_dir string) error {
 	}
 
 	// 自动迁移数据库
-	if err := db.AutoMigrate(&Item{}, &Folder{}); err != nil {
+	if err := db.AutoMigrate(&Item{}, &Folder{}, &Tag{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
-	return err
+	return db, err
 }
 
 func CreateFolder(db *gorm.DB, name string, description string, icon uint32, iconColor uint32, parent_id uuid.UUID, is_expand bool) (*Folder, error) {
@@ -130,7 +130,7 @@ func CreateFolder(db *gorm.DB, name string, description string, icon uint32, ico
 	}
 }
 
-func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name string, description string, icon uint32, iconColor uint32, parent_id uuid.UUID, children []uuid.UUID) (*Folder, error) {
+func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name string, description string, icon uint32, iconColor uint32, parent_id uuid.UUID) (*Folder, error) {
 	// 查找指定 ID 的文件夹
 	var folder Folder
 	if err := db.First(&folder, folderID).Error; err != nil {
@@ -143,7 +143,6 @@ func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name string, description stri
 	folder.Icon = icon
 	folder.IconColor = iconColor
 	folder.ParentID = parent_id
-	db.Model(&folder).Association("Children").Replace()
 	folder.ModifiedAt = time.Now() // 更新修改时间
 
 	// 保存更新后的文件夹

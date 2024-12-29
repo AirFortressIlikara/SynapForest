@@ -45,24 +45,24 @@ func CreateFolder(c *gin.Context) {
 		return
 	}
 
-	folder, err := database.CreateFolder(database.db, req.FolderName, nil, nil, nil, req.Parent)
+	folder, err := database.CreateFolder(database.DB, req.FolderName, "", 0, 0, req.Parent, false)
 	if err != nil {
 		// 返回JSON响应
-		c.JSON(http.StatusBadRequest)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Folder Create Failed",
+		})
+		return
 	}
+
 	// 构建响应数据
 	resp := FolderResponse{
 		Status: "success",
 	}
 	resp.Data.ID = folder.ID
 	resp.Data.Name = req.FolderName
-	resp.Data.Images = []string{}
-	resp.Data.Folders = []uuid.UUID{}
 	resp.Data.ModifiedAt = folder.ModifiedAt
-	resp.Data.ImagesMappings = make(map[string]string)
-	resp.Data.Tags = []string{}
-	resp.Data.Parent = folder.Parent
-	resp.Data.Children = folder.Children
+	resp.Data.Parent = folder.ParentID
 	resp.Data.IsExpand = true
 
 	// 返回JSON响应
