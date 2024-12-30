@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 09:14:33
+ * @LastEditTime: 2024-12-30 14:45:07
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -11,6 +11,7 @@ package database
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"image"
 	"log"
@@ -362,7 +363,7 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	file, err := os.Open(filePath)
 
 	if err != nil {
-		return fmt.Errorf("Open File Failed: %v", err)
+		return fmt.Errorf("open file failed: %v", err)
 	}
 
 	defer file.Close()
@@ -370,7 +371,7 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	// 解码图像
 	img, _, err := image.Decode(file)
 	if err != nil {
-		return fmt.Errorf("Decode image failed: %v", err)
+		return fmt.Errorf("decode image failed: %v", err)
 	}
 
 	// 获取原始图像的宽度和高度
@@ -386,7 +387,7 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	// 创建缩略图文件
 	out, err := os.Create(thumbPath)
 	if err != nil {
-		return fmt.Errorf("Create thumb file failed: %v", err)
+		return fmt.Errorf("create thumb file failed: %v", err)
 	}
 	defer out.Close()
 
@@ -406,7 +407,50 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		return fmt.Errorf("failed to calculate file ID: %v", err)
 	}
 
-	// 2. 获取文件信息
+	// 2. 检查文件是否已存在
+	var existingItem Item
+	err = db.First(&existingItem, "id = ?", fileID).Error
+	if err == nil {
+		// 如果文件已存在，更新 annotation、url、star 和 ModifiedAt
+		err = db.Model(&existingItem).Updates(map[string]interface{}{
+			"ModifiedAt": time.Now(),
+			"Annotation": annotation,
+			"Url":        url,
+			"Star":       star,
+		}).Error
+		if err != nil {
+			return fmt.Errorf("failed to update existing item: %v", err)
+		}
+
+		// 扩展 Tags 和 Folders
+		for _, tagID := range tags {
+			tag := Tag{ID: tagID}
+			err = db.Model(&existingItem).Association("Tags").Append(&tag)
+			if err != nil {
+				return fmt.Errorf("failed to append tag: %v", err)
+			}
+		}
+
+		for _, folderID := range folders {
+			folder := Folder{ID: folderID}
+			err = db.Model(&existingItem).Association("Folders").Append(&folder)
+			if err != nil {
+				return fmt.Errorf("failed to append folder: %v", err)
+			}
+		}
+
+		// 删除原始路径的文件
+		err = os.Remove(path)
+		if err != nil {
+			log.Printf("Failed to delete original file: %v", err)
+		}
+
+		return nil // 已处理完成
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("failed to query existing item: %v", err)
+	}
+
+	// 3. 获取文件信息
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %v", err)
@@ -422,7 +466,7 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 	var width, height uint32
 	var fileSize uint64 = uint64(fileInfo.Size())
 
-	// 3. 如果是图片，打开文件并解码图像获取宽高
+	// 4. 如果是图片，打开文件并解码图像获取宽高
 	if isImage {
 		file, err := os.Open(path)
 		if err != nil {
@@ -439,7 +483,7 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		}
 	}
 
-	// 4. 移动文件到目标路径
+	// 5. 移动文件到目标路径
 	rawFileDir := "./raw_file/" + fileID
 	err = os.MkdirAll(rawFileDir, 0755)
 	if err != nil {
@@ -453,7 +497,7 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		return fmt.Errorf("failed to move file: %v", err)
 	}
 
-	// 5. 生成缩略图（如果是图片）
+	// 6. 生成缩略图（如果是图片）
 	if isImage {
 		thumbPath := "./thumbnails/" + fileID + ".webp"
 		err = generateThumbnail(destPath, thumbPath, 256*256)
@@ -462,7 +506,7 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		}
 	}
 
-	// 6. 创建数据库记录
+	// 7. 创建数据库记录
 	item := Item{
 		ID:          fileID,
 		CreatedAt:   time.Now(),
@@ -482,18 +526,24 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		NoPreview:   false,
 	}
 
-	// 7. 处理 Tags 和 Folders 的多对多关系
+	// 8. 处理 Tags 和 Folders 的多对多关系
 	for _, tagID := range tags {
 		tag := Tag{ID: tagID}
-		db.Model(&item).Association("Tags").Append(&tag)
+		err = db.Model(&item).Association("Tags").Append(&tag)
+		if err != nil {
+			return fmt.Errorf("failed to append tag: %v", err)
+		}
 	}
 
 	for _, folderID := range folders {
 		folder := Folder{ID: folderID}
-		db.Model(&item).Association("Folders").Append(&folder)
+		err = db.Model(&item).Association("Folders").Append(&folder)
+		if err != nil {
+			return fmt.Errorf("failed to append folder: %v", err)
+		}
 	}
 
-	// 8. 保存 Item 到数据库
+	// 9. 保存 Item 到数据库
 	err = db.Create(&item).Error
 	if err != nil {
 		return fmt.Errorf("failed to create item in database: %v", err)
