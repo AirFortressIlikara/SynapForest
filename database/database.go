@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 14:45:07
+ * @LastEditTime: 2024-12-30 16:12:31
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -326,16 +327,25 @@ func ItemList(db *gorm.DB, orderBy string, page int, pageSize int, exts []string
 	return items, nil
 }
 
-// 用来根据文件计算 SHA-256 ID
-func calculateFileID(filePath string) (string, error) {
-	fileData, err := os.ReadFile(filePath)
+// 计算文件内容的 SHA256 哈希值
+func CalculateSHA256(reader io.Reader) (string, error) {
+	hash := sha256.New()
+	_, err := io.Copy(hash, reader)
 	if err != nil {
 		return "", err
 	}
+	hashBytes := hash.Sum(nil)
+	return hex.EncodeToString(hashBytes), nil
+}
 
-	hash := sha256.New()
-	hash.Write(fileData)
-	return hex.EncodeToString(hash.Sum(nil)), nil
+// 根据文件路径计算 SHA256 哈希值
+func CalculateFileID(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	return CalculateSHA256(file)
 }
 
 // 计算缩略图的宽度和高度，确保总像素数不超过 maxPixels，并保持原始图像的长宽比
@@ -400,9 +410,9 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	return nil
 }
 
-func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uuid.UUID, folders []uuid.UUID, star uint8) error {
+func AddItem(db *gorm.DB, path string, url string, name string, website string, annotation string, tags []uuid.UUID, folders []uuid.UUID, star uint8) error {
 	// 1. 根据文件路径计算 SHA-256 哈希值
-	fileID, err := calculateFileID(path)
+	fileID, err := CalculateFileID(path)
 	if err != nil {
 		return fmt.Errorf("failed to calculate file ID: %v", err)
 	}
@@ -415,7 +425,7 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		err = db.Model(&existingItem).Updates(map[string]interface{}{
 			"ModifiedAt": time.Now(),
 			"Annotation": annotation,
-			"Url":        url,
+			"Url":        website,
 			"Star":       star,
 		}).Error
 		if err != nil {
@@ -491,10 +501,15 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 	}
 
 	// 移动文件
-	destPath := filepath.Join(rawFileDir, fileInfo.Name())
+	if name == "" {
+		name = fileInfo.Name()[:len(fileInfo.Name())-len(ext)]
+	}
+	// 构造新的目标路径
+	destPath := filepath.Join(rawFileDir, name+ext)
+	// 移动并重命名文件
 	err = os.Rename(path, destPath)
 	if err != nil {
-		return fmt.Errorf("failed to move file: %v", err)
+		return fmt.Errorf("failed to move and rename file: %v", err)
 	}
 
 	// 6. 生成缩略图（如果是图片）
@@ -512,12 +527,12 @@ func AddItem(db *gorm.DB, path string, url string, annotation string, tags []uui
 		CreatedAt:   time.Now(),
 		ImportedAt:  time.Now(),
 		ModifiedAt:  time.Now(),
-		Name:        fileInfo.Name(),
-		Ext:         ext,
+		Name:        name,
+		Ext:         ext[1:],
 		Width:       width,
 		Height:      height,
 		Size:        fileSize,
-		Url:         url,
+		Url:         website,
 		Annotation:  annotation,
 		Tags:        []Tag{},    // 待处理
 		Folders:     []Folder{}, // 待处理

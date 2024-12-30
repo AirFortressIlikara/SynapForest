@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 08:47:52
+ * @LastEditTime: 2024-12-30 16:11:51
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -12,8 +12,12 @@ package item
 
 import (
 	"fmt"
+	"io"
 	"my_eagle/database"
 	"net/http"
+	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -47,13 +51,133 @@ type Item struct {
 	NoThumbnail bool `json:"no_thumbnail"` // 是否有缩略图
 	NoPreview   bool `json:"no_preview"`   // 是否有预览图
 }
+
 type ItemResponse struct {
 	Status string `json:"status"`
 	Data   []Item `json:"data"`
 }
 
-func AddFromUrls(c *gin.Context) {
+type ItemRequest struct {
+	Items    []ItemDetails `json:"items"`    // 图片信息列表
+	FolderID *uuid.UUID    `json:"folderId"` // 可选，文件夹 ID
+	Token    string        `json:"token"`    // API Token
+}
 
+type ItemDetails struct {
+	URL              string            `json:"url"`              // 图片链接
+	Name             string            `json:"name"`             // 图片名称
+	Website          string            `json:"website"`          // 来源网址
+	Annotation       string            `json:"annotation"`       // 注释
+	Tags             []uuid.UUID       `json:"tags"`             // 标签
+	ModificationTime string            `json:"modificationTime"` // 修改时间
+	Headers          map[string]string `json:"headers"`          // 自定义 HTTP headers
+}
+
+func AddFromUrls(c *gin.Context) {
+	// 解析请求数据
+	var req ItemRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+		})
+		return
+	}
+
+	// 校验token
+	// req.Token
+
+	// 循环处理每个图片
+	for _, item := range req.Items {
+		filePath, err := saveFileFromURL(item.URL, item.Headers)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to download file: %v", err)})
+			return
+		}
+		defer os.Remove(filePath) // 确保请求结束后删除临时文件
+
+		// 将文件路径传递给 AddItem 函数
+		folderID := req.FolderID
+		err = database.AddItem(database.DB, filePath, item.URL, item.Name, item.Website, item.Annotation, item.Tags, []uuid.UUID{*folderID}, 0)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to add item: %v", err)})
+			return
+		}
+	}
+
+	// 返回成功响应
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
+}
+
+// saveFileFromURL 下载文件并保存，返回文件路径
+func saveFileFromURL(url string, headers map[string]string) (string, error) {
+	// 发起 HTTP 请求
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// 添加请求头
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to download file: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 尝试从响应头的 Content-Disposition 中提取文件名
+	fileName := getFileNameFromContentDisposition(resp.Header.Get("Content-Disposition"))
+	if fileName == "" {
+		// 如果响应头没有文件名，则从 URL 中推断文件名
+		fileName = getFileNameFromURL(url)
+	}
+
+	// 如果文件名仍然为空，使用文件内容的 SHA256 哈希值
+	if fileName == "" {
+		fileName, err = database.CalculateSHA256(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("failed to calc hash: %v", err)
+		}
+	}
+
+	// 保存文件
+	filePath := path.Join("/tmp", fileName) // 可以自定义路径
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create file: %v", err)
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to save file: %v", err)
+	}
+
+	return filePath, nil
+}
+
+// 从 URL 提取文件名（如果可以）
+func getFileNameFromURL(url string) string {
+	// 这里假设 URL 末尾可能包含文件名
+	segments := strings.Split(url, "/")
+	if len(segments) > 0 {
+		return segments[len(segments)-1]
+	}
+	return ""
+}
+
+// 从 Content-Disposition 头提取文件名
+func getFileNameFromContentDisposition(contentDisposition string) string {
+	// 解析 Content-Disposition 格式: attachment; filename="example.jpg"
+	parts := strings.Split(contentDisposition, "filename=")
+	if len(parts) > 1 {
+		return strings.Trim(parts[1], "\"")
+	}
+	return ""
 }
 
 func AddFromPaths(c *gin.Context) {
