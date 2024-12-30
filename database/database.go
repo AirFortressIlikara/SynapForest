@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 16:12:31
+ * @LastEditTime: 2024-12-30 16:18:51
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -410,7 +410,7 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	return nil
 }
 
-func AddItem(db *gorm.DB, path string, url string, name string, website string, annotation string, tags []uuid.UUID, folders []uuid.UUID, star uint8) error {
+func AddItem(db *gorm.DB, path string, name string, url string, annotation string, tags []uuid.UUID, folders []uuid.UUID, star uint8) error {
 	// 1. 根据文件路径计算 SHA-256 哈希值
 	fileID, err := CalculateFileID(path)
 	if err != nil {
@@ -425,7 +425,7 @@ func AddItem(db *gorm.DB, path string, url string, name string, website string, 
 		err = db.Model(&existingItem).Updates(map[string]interface{}{
 			"ModifiedAt": time.Now(),
 			"Annotation": annotation,
-			"Url":        website,
+			"Url":        url,
 			"Star":       star,
 		}).Error
 		if err != nil {
@@ -532,7 +532,7 @@ func AddItem(db *gorm.DB, path string, url string, name string, website string, 
 		Width:       width,
 		Height:      height,
 		Size:        fileSize,
-		Url:         website,
+		Url:         url,
 		Annotation:  annotation,
 		Tags:        []Tag{},    // 待处理
 		Folders:     []Folder{}, // 待处理

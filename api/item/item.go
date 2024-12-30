@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 16:11:51
+ * @LastEditTime: 2024-12-30 16:18:49
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -98,7 +98,7 @@ func AddFromUrls(c *gin.Context) {
 
 		// 将文件路径传递给 AddItem 函数
 		folderID := req.FolderID
-		err = database.AddItem(database.DB, filePath, item.URL, item.Name, item.Website, item.Annotation, item.Tags, []uuid.UUID{*folderID}, 0)
+		err = database.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, []uuid.UUID{*folderID}, 0)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to add item: %v", err)})
 			return
