@@ -3,8 +3,10 @@ module my_eagle
 go 1.22.2
 
 require (
+	github.com/chai2010/webp v1.1.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gofrs/uuid v4.4.0+incompatible
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )

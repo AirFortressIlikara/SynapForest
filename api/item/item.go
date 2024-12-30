@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 06:42:37
+ * @LastEditTime: 2024-12-30 08:47:52
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -38,18 +38,14 @@ type Item struct {
 	Url        string `json:"url"`        // 文件来源URL
 	Annotation string `json:"annotation"` // 注释
 
-	TagIds    []uuid.UUID `json:"tag_id"`    // Tags
+	TagIds    []uuid.UUID `json:"tag_id"`    // Tags ID列表
 	FolderIds []uuid.UUID `json:"folder_id"` // 文件夹ID列表
 
 	// Palettes []uint32 `json:"palettes"` // 色票（这是什么？）
 	Star uint8 `json:"star"` // 星级评分
 
-	NoThumbnail   bool   `json:"no_thumbnail"`   // 是否有缩略图
-	NoPreview     bool   `json:"no_preview"`     // 是否有预览图
-	FilePath      string `json:"file_path"`      // 文件路径
-	FileUrl       string `json:"file_url"`       // 文件URL
-	ThumbnailPath string `json:"thumbnail_path"` // 缩略图路径
-	ThumbnailUrl  string `json:"thumbnail_url"`  // 缩略图URL
+	NoThumbnail bool `json:"no_thumbnail"` // 是否有缩略图
+	NoPreview   bool `json:"no_preview"`   // 是否有预览图
 }
 type ItemResponse struct {
 	Status string `json:"status"`
@@ -77,6 +73,8 @@ func Update(c *gin.Context) {
 }
 
 type ItemListRequest struct {
+	Limit     int         `json:"limit"`
+	Offset    int         `json:"offset"`
 	OrderBy   string      `json:"order_by"`
 	Exts      []string    `json:"exts"`
 	Keyword   string      `json:"keyword"`
@@ -96,7 +94,7 @@ func List(c *gin.Context) {
 		return
 	}
 
-	items, err := database.ItemList(database.DB, req.OrderBy, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
+	items, err := database.ItemList(database.DB, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
 	if err != nil {
 		// 返回JSON响应
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -142,11 +140,6 @@ func List(c *gin.Context) {
 
 			NoThumbnail: item.NoThumbnail,
 			NoPreview:   item.NoPreview,
-
-			FilePath:      item.FilePath,
-			FileUrl:       item.FileUrl,
-			ThumbnailPath: item.ThumbnailPath,
-			ThumbnailUrl:  item.ThumbnailUrl,
 		}
 
 		// 提取 Tags 和 Folders 的 ID
