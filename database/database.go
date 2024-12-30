@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-29 13:34:24
+ * @LastEditTime: 2024-12-30 06:40:45
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -21,7 +21,7 @@ import (
 )
 
 type Item struct {
-	ID         uint           `json:"id" gorm:"primaryKey"` // 主键，文件的Hash
+	ID         string         `json:"id" gorm:"primaryKey"` // 主键，文件的Hash
 	CreatedAt  time.Time      `json:"created_at"`           // 创建时间
 	ImportedAt time.Time      `json:"imported_at"`          // 导入时间
 	ModifiedAt time.Time      `json:"modified_at"`          // 修改时间
@@ -198,8 +198,8 @@ func UpdateFolderParents(db *gorm.DB, folderIDs []uuid.UUID, newParentID uuid.UU
 }
 
 // GetItemIDsByFolder 查询指定文件夹下所有图片的 ID
-func GetItemIDsByFolder(db *gorm.DB, folderID uuid.UUID) ([]uuid.UUID, error) {
-	var itemIDs []uuid.UUID
+func GetItemIDsByFolder(db *gorm.DB, folderID uuid.UUID) ([]string, error) {
+	var itemIDs []string
 
 	// 查询中间表
 	err := db.Table("item_folders").
@@ -214,7 +214,7 @@ func GetItemIDsByFolder(db *gorm.DB, folderID uuid.UUID) ([]uuid.UUID, error) {
 }
 
 // GetFoldersByItemID 查询指定图片 ID 所属的所有文件夹
-func GetFoldersByItemID(db *gorm.DB, itemID uuid.UUID) ([]uuid.UUID, error) {
+func GetFoldersByItemID(db *gorm.DB, itemID string) ([]uuid.UUID, error) {
 	var folderIDs []uuid.UUID
 
 	// 查询中间表
@@ -230,7 +230,7 @@ func GetFoldersByItemID(db *gorm.DB, itemID uuid.UUID) ([]uuid.UUID, error) {
 }
 
 // UpdateFoldersForItem 批量更新指定图片的所属文件夹 ID 列表
-func UpdateFoldersForItem(db *gorm.DB, itemID uuid.UUID, newFolderIDs []uuid.UUID) error {
+func UpdateFoldersForItem(db *gorm.DB, itemID string, newFolderIDs []uuid.UUID) error {
 	if len(newFolderIDs) == 0 {
 		return nil // 如果没有新的文件夹 ID，直接返回
 	}
@@ -260,4 +260,55 @@ func UpdateFoldersForItem(db *gorm.DB, itemID uuid.UUID, newFolderIDs []uuid.UUI
 
 		return nil
 	})
+}
+
+// 查找符合条件的 items
+func ItemList(db *gorm.DB, orderBy string, exts []string, keyword string, tags []uuid.UUID, folders []uuid.UUID) ([]Item, error) {
+	var items []Item
+
+	// 开始查询
+	query := db.Model(&Item{})
+
+	// 根据扩展名 (ext) 过滤
+	if len(exts) > 0 {
+		query = query.Where("ext IN ?", exts)
+	}
+
+	// 根据关键字 (keyword) 模糊查询，假设我们只关心 'Name' 字段
+	if keyword != "" {
+		query = query.Where("name LIKE ?", "%"+keyword+"%")
+	}
+
+	// 根据 tags 过滤，假设 tags 与 item 是多对多关系
+	if len(tags) > 0 {
+		query = query.Joins("JOIN item_tags ON item_tags.item_id = items.id").
+			Where("item_tags.tag_id IN ?", tags)
+	}
+
+	// 根据 folders 过滤，假设 folders 与 item 是多对多关系
+	if len(folders) > 0 {
+		query = query.Joins("JOIN item_folders ON item_folders.item_id = items.id").
+			Where("item_folders.folder_id IN ?", folders)
+	}
+
+	// 根据排序字段 (orderBy)，如果为空则默认按 ID 排序
+	if orderBy != "" {
+		query = query.Order(orderBy)
+	} else {
+		query = query.Order("items.id ASC") // 默认按 ID 升序
+	}
+
+	// // 执行查询，查询结果为 item 的 ID 列表
+	// err := query.Select("items.id").Find(&items).Error
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// // 提取 ID 列表
+	// var ids []string
+	// for _, item := range items {
+	// 	ids = append(ids, item.ID)
+	// }
+
+	return items, nil
 }
