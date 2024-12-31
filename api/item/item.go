@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 16:18:49
+ * @LastEditTime: 2024-12-31 03:03:27
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -204,6 +204,7 @@ type ItemListRequest struct {
 	Keyword   string      `json:"keyword"`
 	TagIDs    []uuid.UUID `json:"tags"`
 	FolderIDs []uuid.UUID `json:"folder_ids"`
+	IsDeleted bool        `json:"is_deleted"`
 }
 
 func List(c *gin.Context) {
@@ -218,7 +219,7 @@ func List(c *gin.Context) {
 		return
 	}
 
-	items, err := database.ItemList(database.DB, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
+	items, err := database.ItemList(database.DB, req.IsDeleted, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
 	if err != nil {
 		// 返回JSON响应
 		c.JSON(http.StatusInternalServerError, gin.H{

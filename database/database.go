@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 16:18:51
+ * @LastEditTime: 2024-12-31 03:01:43
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -267,7 +267,7 @@ func UpdateFoldersForItem(db *gorm.DB, itemID string, newFolderIDs []uuid.UUID) 
 }
 
 // 查找符合条件的 items
-func ItemList(db *gorm.DB, orderBy string, page int, pageSize int, exts []string, keyword string, tags []uuid.UUID, folders []uuid.UUID) ([]Item, error) {
+func ItemList(db *gorm.DB, isDeleted bool, orderBy string, page int, pageSize int, exts []string, keyword string, tags []uuid.UUID, folders []uuid.UUID) ([]Item, error) {
 	var items []Item
 
 	// 校验 page 和 pageSize 参数
@@ -283,6 +283,11 @@ func ItemList(db *gorm.DB, orderBy string, page int, pageSize int, exts []string
 
 	// 开始查询
 	query := db.Model(&Item{})
+
+	// 查询软删除的记录
+	if isDeleted {
+		query = query.Unscoped().Where("deleted_at IS NOT NULL")
+	}
 
 	// 根据扩展名 (ext) 过滤
 	if len(exts) > 0 {
@@ -564,5 +569,21 @@ func AddItem(db *gorm.DB, path string, name string, url string, annotation strin
 		return fmt.Errorf("failed to create item in database: %v", err)
 	}
 
+	return nil
+}
+
+func ItemSoftDelete(db *gorm.DB, itemIDs []string) error {
+	result := db.Delete(&Item{}, itemIDs)
+	if result.Error != nil {
+		return fmt.Errorf("soft delete items failed: %v", result.Error)
+	}
+	return nil
+}
+
+func ItemHardDelete(db *gorm.DB, itemIDs []string) error {
+	result := db.Unscoped().Delete(&Item{}, itemIDs)
+	if result.Error != nil {
+		return fmt.Errorf("hard delete items failed: %v", result.Error)
+	}
 	return nil
 }
