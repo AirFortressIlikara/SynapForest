@@ -2,14 +2,15 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 08:44:08
- * @FilePath: /my_eagle/api/folder/folder.go
+ * @LastEditTime: 2024-12-31 09:16:38
+ * @FilePath: /my_eagle/api/folderapi/folder.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
-package folder
+package folderapi
 
 import (
 	"my_eagle/database"
+	"my_eagle/database/folderdb"
 	"net/http"
 	"time"
 
@@ -58,7 +59,7 @@ func CreateFolder(c *gin.Context) {
 		return
 	}
 
-	folder, err := database.CreateFolder(database.DB, req.FolderName, "", 0, 0, req.Parent, false)
+	folder, err := folderdb.CreateFolder(database.DB, req.FolderName, "", 0, 0, req.Parent, false)
 	if err != nil {
 		// 返回JSON响应
 		c.JSON(http.StatusInternalServerError, gin.H{

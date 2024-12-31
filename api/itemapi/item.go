@@ -2,18 +2,19 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 08:45:36
- * @FilePath: /my_eagle/api/item/item.go
+ * @LastEditTime: 2024-12-31 09:14:06
+ * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
  * Copyright (c) 2024 by ${git_name_email}, All Rights Reserved.
  */
-package item
+package itemapi
 
 import (
 	"fmt"
 	"io"
 	"my_eagle/database"
+	"my_eagle/database/itemdb"
 	"net/http"
 	"os"
 	"path"
@@ -100,7 +101,7 @@ func AddFromUrls(c *gin.Context) {
 
 		// 将文件路径传递给 AddItem 函数
 		star := uint8(0)
-		err = database.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, req.FolderIDs, &star, item.ModificationTime)
+		err = itemdb.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, req.FolderIDs, &star, item.ModificationTime)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to add item: %v", err)})
 			return
@@ -140,7 +141,7 @@ func saveFileFromURL(url string, headers map[string]string) (string, error) {
 
 	// 如果文件名仍然为空，使用文件内容的 SHA256 哈希值
 	if fileName == "" {
-		fileName, err = database.CalculateSHA256(resp.Body)
+		fileName, err = itemdb.CalculateSHA256(resp.Body)
 		if err != nil {
 			return "", fmt.Errorf("failed to calc hash: %v", err)
 		}
@@ -212,7 +213,7 @@ func MoveToTrash(c *gin.Context) {
 		})
 		return
 	}
-	err := database.ItemSoftDelete(database.DB, req.ItemIDs)
+	err := itemdb.ItemSoftDelete(database.DB, req.ItemIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
 	}
@@ -254,7 +255,7 @@ func List(c *gin.Context) {
 		return
 	}
 
-	items, err := database.ItemList(database.DB, req.IsDeleted, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
+	items, err := itemdb.ItemList(database.DB, req.IsDeleted, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
 	if err != nil {
 		// 返回JSON响应
 		c.JSON(http.StatusInternalServerError, gin.H{
