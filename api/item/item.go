@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-30 16:18:49
+ * @LastEditTime: 2024-12-31 03:28:42
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -189,7 +189,29 @@ func Info(c *gin.Context) {
 }
 
 func MoveToTrash(c *gin.Context) {
+	var req struct {
+		ItemIDs []string `json:"item_ids"`
+		Token   string   `json:"token"`
+	}
 
+	// 绑定JSON数据到结构体
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+		})
+		return
+	}
+
+	// if req.Token != ....
+
+	err := database.ItemSoftDelete(database.DB, req.ItemIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
+	}
+
+	// 返回成功响应
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 func Update(c *gin.Context) {
@@ -205,10 +227,13 @@ type ItemListRequest struct {
 	TagIDs    []uuid.UUID `json:"tags"`
 	FolderIDs []uuid.UUID `json:"folder_ids"`
 	IsDeleted bool        `json:"is_deleted"`
+	Token     string      `json:"token"`
 }
 
 func List(c *gin.Context) {
 	var req ItemListRequest
+
+	// if req.Token != ....
 
 	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
