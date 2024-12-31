@@ -2,13 +2,13 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 09:03:50
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:05:11
+ * @LastEditTime: 2024-12-31 09:19:23
  * @FilePath: /my_eagle/database/common/common.go
  * @Description:
  *
  * Copyright (c) 2024 by ${git_name_email}, All Rights Reserved.
  */
-package common
+package dbcommon
 
 import (
 	"time"

@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:15:29
+ * @LastEditTime: 2024-12-31 09:19:47
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -10,7 +10,7 @@ package database
 
 import (
 	"log"
-	"my_eagle/database/common"
+	"my_eagle/database/dbcommon"
 	"os"
 	"path/filepath"
 
@@ -44,7 +44,7 @@ func Database_init(library_dir string) (*gorm.DB, error) {
 	}
 
 	// 自动迁移数据库
-	if err := db.AutoMigrate(&common.Item{}, &common.Folder{}, &common.Tag{}); err != nil {
+	if err := db.AutoMigrate(&dbcommon.Item{}, &dbcommon.Folder{}, &dbcommon.Tag{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -56,7 +56,7 @@ func GetChildFolderIDs(db *gorm.DB, folderID uuid.UUID) ([]uuid.UUID, error) {
 	var childIDs []uuid.UUID
 
 	// 查询直接子文件夹的 UUID
-	err := db.Model(&common.Folder{}).Where("parent_id = ?", folderID).Pluck("id", &childIDs).Error
+	err := db.Model(&dbcommon.Folder{}).Where("parent_id = ?", folderID).Pluck("id", &childIDs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func UpdateFolderParents(db *gorm.DB, folderIDs []uuid.UUID, newParentID uuid.UU
 	}
 
 	// 批量更新
-	result := db.Model(&common.Folder{}).
+	result := db.Model(&dbcommon.Folder{}).
 		Where("id IN ?", folderIDs).
 		Update("parent_id", newParentID)
 

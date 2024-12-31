@@ -2,8 +2,8 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:12:59
- * @FilePath: /my_eagle/database/itemdb/item.go
+ * @LastEditTime: 2024-12-31 09:20:00
+ * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
  * Copyright (c) 2024 by ${git_name_email}, All Rights Reserved.
@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"my_eagle/database"
-	"my_eagle/database/common"
+	"my_eagle/database/dbcommon"
 
 	"github.com/chai2010/webp"
 	"github.com/gofrs/uuid"
@@ -33,11 +33,11 @@ import (
 )
 
 // 查找符合条件的 items
-func ItemList(db *gorm.DB, isDeleted *bool, orderBy *string, page *int, pageSize *int, exts []string, keyword *string, tags []uuid.UUID, folders []uuid.UUID) ([]common.Item, error) {
-	var items []common.Item
+func ItemList(db *gorm.DB, isDeleted *bool, orderBy *string, page *int, pageSize *int, exts []string, keyword *string, tags []uuid.UUID, folders []uuid.UUID) ([]dbcommon.Item, error) {
+	var items []dbcommon.Item
 
 	// 开始查询
-	query := db.Model(&common.Item{})
+	query := db.Model(&dbcommon.Item{})
 
 	// 查询软删除的记录
 	if isDeleted != nil && *isDeleted {
@@ -226,7 +226,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 	}
 
 	// 2. 检查文件是否已存在
-	var existingItem common.Item
+	var existingItem dbcommon.Item
 	err = db.First(&existingItem, "id = ?", fileID).Error
 	if err == nil {
 		updates := map[string]interface{}{
@@ -259,7 +259,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 
 		// 扩展 Tags 和 Folders
 		for _, tagID := range tags {
-			tag := common.Tag{ID: tagID}
+			tag := dbcommon.Tag{ID: tagID}
 			err = db.Model(&existingItem).Association("Tags").Append(&tag)
 			if err != nil {
 				return fmt.Errorf("failed to append tag: %v", err)
@@ -267,7 +267,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		}
 
 		for _, folderID := range folders {
-			folder := common.Folder{ID: folderID}
+			folder := dbcommon.Folder{ID: folderID}
 			err = db.Model(&existingItem).Association("Folders").Append(&folder)
 			if err != nil {
 				return fmt.Errorf("failed to append folder: %v", err)
@@ -347,7 +347,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 	}
 
 	// 7. 创建数据库记录
-	item := common.Item{
+	item := dbcommon.Item{
 		ID:          fileID,
 		CreatedAt:   time.Now(),
 		ImportedAt:  time.Now(),
@@ -359,8 +359,8 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		Size:        fileSize,
 		Url:         *url,
 		Annotation:  *annotation,
-		Tags:        []common.Tag{},    // 待处理
-		Folders:     []common.Folder{}, // 待处理
+		Tags:        []dbcommon.Tag{},    // 待处理
+		Folders:     []dbcommon.Folder{}, // 待处理
 		Star:        *star,
 		NoThumbnail: false,
 		NoPreview:   false,
@@ -371,7 +371,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 
 	// 8. 处理 Tags 和 Folders 的多对多关系
 	for _, tagID := range tags {
-		tag := common.Tag{ID: tagID}
+		tag := dbcommon.Tag{ID: tagID}
 		err = db.Model(&item).Association("Tags").Append(&tag)
 		if err != nil {
 			return fmt.Errorf("failed to append tag: %v", err)
@@ -379,14 +379,14 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 	}
 
 	for _, folderID := range folders {
-		folder := common.Folder{ID: folderID}
+		folder := dbcommon.Folder{ID: folderID}
 		err = db.Model(&item).Association("Folders").Append(&folder)
 		if err != nil {
 			return fmt.Errorf("failed to append folder: %v", err)
 		}
 	}
 
-	// 9. 保存 common.Item 到数据库
+	// 9. 保存 dbcommon.Item 到数据库
 	err = db.Create(&item).Error
 	if err != nil {
 		return fmt.Errorf("failed to create item in database: %v", err)
@@ -396,7 +396,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 }
 
 func ItemSoftDelete(db *gorm.DB, itemIDs []string) error {
-	result := db.Delete(&common.Item{}, itemIDs)
+	result := db.Delete(&dbcommon.Item{}, itemIDs)
 	if result.Error != nil {
 		return fmt.Errorf("soft delete items failed: %v", result.Error)
 	}
@@ -404,7 +404,7 @@ func ItemSoftDelete(db *gorm.DB, itemIDs []string) error {
 }
 
 func ItemHardDelete(db *gorm.DB, itemIDs []string) error {
-	result := db.Unscoped().Delete(&common.Item{}, itemIDs)
+	result := db.Unscoped().Delete(&dbcommon.Item{}, itemIDs)
 	if result.Error != nil {
 		return fmt.Errorf("hard delete items failed: %v", result.Error)
 	}
