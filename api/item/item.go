@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 08:08:04
+ * @LastEditTime: 2024-12-31 08:45:36
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -81,8 +81,13 @@ func AddFromUrls(c *gin.Context) {
 		return
 	}
 
-	// 校验token
-	// req.Token
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
+		})
+		return
+	}
 
 	// 循环处理每个图片
 	for _, item := range req.Items {
@@ -188,7 +193,7 @@ func Info(c *gin.Context) {
 func MoveToTrash(c *gin.Context) {
 	var req struct {
 		ItemIDs []string `json:"item_ids"`
-		Token   string   `json:"token"`
+		Token   string   `json:"token" binding:"required"`
 	}
 
 	// 绑定JSON数据到结构体
@@ -200,8 +205,13 @@ func MoveToTrash(c *gin.Context) {
 		return
 	}
 
-	// if req.Token != ....
-
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
+		})
+		return
+	}
 	err := database.ItemSoftDelete(database.DB, req.ItemIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
@@ -228,8 +238,13 @@ func List(c *gin.Context) {
 		Token     string      `json:"token" binding:"required"`
 	}
 
-	// if req.Token != ....
-
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
+		})
+		return
+	}
 	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

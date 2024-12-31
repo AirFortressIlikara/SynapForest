@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 08:08:30
+ * @LastEditTime: 2024-12-31 08:42:53
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -27,6 +27,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+var Token string = "TEST123123"
 
 type Item struct {
 	ID         string         `json:"id" gorm:"primaryKey"` // 主键，文件的Hash
@@ -126,14 +128,19 @@ func Database_init(library_dir string) (*gorm.DB, error) {
 	return db, err
 }
 
-func CreateFolder(db *gorm.DB, name string, description string, icon uint32, iconColor uint32, parent_id uuid.UUID, is_expand bool) (*Folder, error) {
+var defaultName string = "NewFolder"
+
+func CreateFolder(db *gorm.DB, name *string, description string, icon uint32, iconColor uint32, parent_id uuid.UUID, is_expand bool) (*Folder, error) {
+	if name == nil || *name == "" {
+		name = &defaultName
+	}
 	if newUUID, err := uuid.NewV4(); err != nil {
 		log.Printf("failed to generate UUID %v", err)
 		return nil, fmt.Errorf("failed to generate UUID: %v", err)
 	} else {
 		folder := Folder{
 			ID:          newUUID,
-			Name:        name,
+			Name:        *name,
 			Description: description,
 			Icon:        icon,
 			IconColor:   iconColor,

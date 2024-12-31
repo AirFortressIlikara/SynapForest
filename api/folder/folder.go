@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-29 15:00:49
+ * @LastEditTime: 2024-12-31 08:44:08
  * @FilePath: /my_eagle/api/folder/folder.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -16,13 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
 )
-
-// 请求的结构体
-type CreateFolderRequest struct {
-	FolderName string    `json:"folderName"`
-	Parent     uuid.UUID `json:"parent"`
-	Token      string    `json:"token"`
-}
 
 // 返回的结构体
 type FolderResponse struct {
@@ -42,13 +35,25 @@ type FolderResponse struct {
 }
 
 func CreateFolder(c *gin.Context) {
-	var req CreateFolderRequest
+	var req struct {
+		FolderName *string   `json:"folderName"`
+		Parent     uuid.UUID `json:"parent"`
 
+		Token string `json:"token" binding:"required"`
+	}
 	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
+		})
+		return
+	}
+
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
 		})
 		return
 	}
@@ -68,7 +73,7 @@ func CreateFolder(c *gin.Context) {
 		Status: "success",
 	}
 	resp.Data.ID = folder.ID
-	resp.Data.Name = req.FolderName
+	resp.Data.Name = *req.FolderName
 	resp.Data.ModifiedAt = folder.ModifiedAt
 	resp.Data.Parent = folder.ParentID
 	resp.Data.Children, _ = database.GetChildFolderIDs(database.DB, folder.ID)
