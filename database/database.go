@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 03:01:43
+ * @LastEditTime: 2024-12-31 03:15:54
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -96,14 +96,21 @@ type Tag struct {
 }
 
 var DB *gorm.DB
+var dbBaseDir string
 
 func Database_init(library_dir string) (*gorm.DB, error) {
 	var err error
 
+	dbBaseDir = library_dir
+
 	// 创建数据库存储路径
-	if err := os.MkdirAll(library_dir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(dbBaseDir, os.ModePerm); err != nil {
 		log.Fatalf("failed to create data directory: %v", err)
 	}
+
+	// 创建文件存储和缩略图存储目录
+	os.MkdirAll(filepath.Join(dbBaseDir, "raw_files"), os.ModePerm)
+	os.MkdirAll(filepath.Join(dbBaseDir, "thumbnails"), os.ModePerm)
 
 	// 打开 SQLite 数据库
 	db, err := gorm.Open(sqlite.Open(filepath.Join(library_dir, "files.db")), &gorm.Config{})
@@ -499,7 +506,7 @@ func AddItem(db *gorm.DB, path string, name string, url string, annotation strin
 	}
 
 	// 5. 移动文件到目标路径
-	rawFileDir := "./raw_file/" + fileID
+	rawFileDir := filepath.Join(dbBaseDir, "raw_files", fileID)
 	err = os.MkdirAll(rawFileDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create target directory: %v", err)
@@ -519,7 +526,7 @@ func AddItem(db *gorm.DB, path string, name string, url string, annotation strin
 
 	// 6. 生成缩略图（如果是图片）
 	if isImage {
-		thumbPath := "./thumbnails/" + fileID + ".webp"
+		thumbPath := filepath.Join(dbBaseDir, "thumbnails", fileID+".webp")
 		err = generateThumbnail(destPath, thumbPath, 256*256)
 		if err != nil {
 			log.Printf("Failed to generate thumbnail: %v", err)

@@ -1,8 +1,17 @@
+/*
+ * @Author: ilikara 3435193369@qq.com
+ * @Date: 2024-12-29 12:43:00
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2024-12-31 03:17:47
+ * @FilePath: /my_eagle/main.go
+ * @Description:
+ *
+ * Copyright (c) 2024 by ${git_name_email}, All Rights Reserved.
+ */
 package main
 
 import (
 	"log"
-	"os"
 
 	"my_eagle/api/folder"
 	"my_eagle/api/item"
@@ -17,10 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed init database: %v", err)
 	}
-
-	// 创建文件存储和缩略图存储目录
-	os.MkdirAll("files", os.ModePerm)
-	os.MkdirAll("thumbnails", os.ModePerm)
 
 	// 启动 Gin Web 框架
 	r := gin.Default()
