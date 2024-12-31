@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:14:06
+ * @LastEditTime: 2024-12-31 10:53:14
  * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
@@ -49,8 +49,8 @@ type Item struct {
 	// Palettes []uint32 `json:"palettes"` // 色票（这是什么？）
 	Star uint8 `json:"star"` // 星级评分
 
-	NoThumbnail bool `json:"no_thumbnail"` // 是否有缩略图
-	NoPreview   bool `json:"no_preview"`   // 是否有预览图
+	HaveThumbnail bool `json:"have_thumbnail"` // 是否有缩略图
+	HavePreview   bool `json:"have_preview"`   // 是否有预览图
 }
 
 type ItemResponse struct {
@@ -299,8 +299,8 @@ func List(c *gin.Context) {
 
 			Star: item.Star,
 
-			NoThumbnail: item.NoThumbnail,
-			NoPreview:   item.NoPreview,
+			HaveThumbnail: item.HaveThumbnail,
+			HavePreview:   item.HavePreview,
 		}
 
 		// 提取 Tags 和 Folders 的 ID

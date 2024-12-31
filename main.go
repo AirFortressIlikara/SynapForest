@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 10:16:59
+ * @LastEditTime: 2024-12-31 10:51:57
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// TEST
-	itemdb.AddItem(database.DB, "./test/OvO/cc38971758f69385f5f918fbe2e0c3d2.jpg", nil, nil, nil, nil, nil, nil, nil)
+	itemdb.ItemHardDelete(database.DB, []string{"f81723419c242656ef53b4eeb471bf97909193bd58e407f969f9b4e6748f26de"})
 	// // 启动 Gin Web 框架
 	// r := gin.Default()
 

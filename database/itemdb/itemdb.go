@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 10:21:27
+ * @LastEditTime: 2024-12-31 10:51:42
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -221,13 +221,13 @@ func RenameFile(oldPath, Name string) error {
 }
 
 func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *string, tags []uuid.UUID, folders []uuid.UUID, star *uint8, created_at *time.Time) error {
-	// 1. 根据文件路径计算 SHA-256 哈希值
+	// 根据文件路径计算 SHA-256 哈希值
 	fileID, err := CalculateFileID(path)
 	if err != nil {
 		return fmt.Errorf("failed to calculate file ID: %v", err)
 	}
 
-	// 2. 检查文件是否已存在
+	// 检查文件是否已存在
 	var existingItem dbcommon.Item
 	err = db.First(&existingItem, "id = ?", fileID).Error
 	if err == nil {
@@ -287,7 +287,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		return fmt.Errorf("failed to query existing item: %v", err)
 	}
 
-	// 3. 获取文件信息
+	// 获取文件信息
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %v", err)
@@ -303,7 +303,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 	var width, height uint32
 	var fileSize uint64 = uint64(fileInfo.Size())
 
-	// 4. 如果是图片，打开文件并解码图像获取宽高
+	// 如果是图片，打开文件并解码图像获取宽高
 	if isImage {
 		file, err := os.Open(path)
 		if err != nil {
@@ -320,7 +320,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		}
 	}
 
-	// 5. 移动文件到目标路径
+	// 移动文件到目标路径
 	rawFileDir := filepath.Join(database.DbBaseDir, "raw_files", fileID)
 	err = os.MkdirAll(rawFileDir, 0755)
 	if err != nil {
@@ -340,30 +340,21 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		return fmt.Errorf("failed to move and rename file: %v", err)
 	}
 
-	// 6. 生成缩略图（如果是图片）
-	if isImage {
-		thumbPath := filepath.Join(database.DbBaseDir, "thumbnails", fileID+".webp")
-		err = generateThumbnail(destPath, thumbPath, 256*256)
-		if err != nil {
-			log.Printf("Failed to generate thumbnail: %v", err)
-		}
-	}
-
-	// 7. 创建数据库记录
+	// 创建数据库记录
 	item := dbcommon.Item{
-		ID:          fileID,
-		CreatedAt:   time.Now(),
-		ImportedAt:  time.Now(),
-		ModifiedAt:  time.Now(),
-		Name:        name1,
-		Ext:         ext[1:],
-		Width:       width,
-		Height:      height,
-		Size:        fileSize,
-		Tags:        []dbcommon.Tag{},    // 待处理
-		Folders:     []dbcommon.Folder{}, // 待处理
-		NoThumbnail: false,
-		NoPreview:   false,
+		ID:            fileID,
+		CreatedAt:     time.Now(),
+		ImportedAt:    time.Now(),
+		ModifiedAt:    time.Now(),
+		Name:          name1,
+		Ext:           ext[1:],
+		Width:         width,
+		Height:        height,
+		Size:          fileSize,
+		Tags:          []dbcommon.Tag{},    // 待处理
+		Folders:       []dbcommon.Folder{}, // 待处理
+		HaveThumbnail: false,
+		HavePreview:   false,
 	}
 	if created_at != nil {
 		item.CreatedAt = *created_at
@@ -378,7 +369,18 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		item.Annotation = *annotation
 	}
 
-	// 8. 处理 Tags 和 Folders 的多对多关系
+	// 生成缩略图（如果是图片）
+	if isImage {
+		thumbPath := filepath.Join(database.DbBaseDir, "thumbnails", fileID+".webp")
+		err = generateThumbnail(destPath, thumbPath, 256*256)
+		if err != nil {
+			log.Printf("Failed to generate thumbnail: %v", err)
+		} else {
+			item.HaveThumbnail = true
+		}
+	}
+
+	// 处理 Tags 和 Folders 的多对多关系
 	for _, tagID := range tags {
 		tag := dbcommon.Tag{ID: tagID}
 		err = db.Model(&item).Association("Tags").Append(&tag)
@@ -395,7 +397,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		}
 	}
 
-	// 9. 保存 dbcommon.Item 到数据库
+	//  保存 dbcommon.Item 到数据库
 	err = db.Create(&item).Error
 	if err != nil {
 		return fmt.Errorf("failed to create item in database: %v", err)
@@ -413,9 +415,26 @@ func ItemSoftDelete(db *gorm.DB, itemIDs []string) error {
 }
 
 func ItemHardDelete(db *gorm.DB, itemIDs []string) error {
+	// 1. 硬删除数据库记录
 	result := db.Unscoped().Delete(&dbcommon.Item{}, itemIDs)
 	if result.Error != nil {
 		return fmt.Errorf("hard delete items failed: %v", result.Error)
 	}
+
+	// 2. 删除文件和缩略图
+	for _, itemID := range itemIDs {
+		// 删除文件夹及其子文件
+		itemDir := filepath.Join(database.DbBaseDir, "raw_files", itemID)
+		if err := os.RemoveAll(itemDir); err != nil {
+			return fmt.Errorf("failed to delete item directory '%s': %v", itemDir, err)
+		}
+
+		// 删除缩略图文件
+		thumbnailFile := filepath.Join(database.DbBaseDir, "thumbnails", itemID+".webp")
+		if err := os.Remove(thumbnailFile); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to delete thumbnail '%s': %v", thumbnailFile, err)
+		}
+	}
+
 	return nil
 }
