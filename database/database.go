@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 03:20:28
+ * @LastEditTime: 2024-12-31 08:08:30
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -274,25 +274,14 @@ func UpdateFoldersForItem(db *gorm.DB, itemID string, newFolderIDs []uuid.UUID) 
 }
 
 // 查找符合条件的 items
-func ItemList(db *gorm.DB, isDeleted bool, orderBy string, page int, pageSize int, exts []string, keyword string, tags []uuid.UUID, folders []uuid.UUID) ([]Item, error) {
+func ItemList(db *gorm.DB, isDeleted *bool, orderBy *string, page *int, pageSize *int, exts []string, keyword *string, tags []uuid.UUID, folders []uuid.UUID) ([]Item, error) {
 	var items []Item
-
-	// 校验 page 和 pageSize 参数
-	if page <= 0 {
-		page = 1 // 默认设置为第一页
-	}
-	if pageSize <= 0 {
-		pageSize = 20 // 默认每页 20 条记录
-	}
-	if pageSize > 1000 {
-		pageSize = 1000 // 设置最大每页 1000 条记录
-	}
 
 	// 开始查询
 	query := db.Model(&Item{})
 
 	// 查询软删除的记录
-	if isDeleted {
+	if isDeleted != nil && *isDeleted {
 		query = query.Unscoped().Where("deleted_at IS NOT NULL")
 	}
 
@@ -302,8 +291,8 @@ func ItemList(db *gorm.DB, isDeleted bool, orderBy string, page int, pageSize in
 	}
 
 	// 根据关键字 (keyword) 模糊查询，假设我们只关心 'Name' 字段
-	if keyword != "" {
-		query = query.Where("name LIKE ?", "%"+keyword+"%")
+	if keyword != nil && *keyword != "" {
+		query = query.Where("name LIKE ?", "%"+*keyword+"%")
 	}
 
 	// 根据 tags 过滤，假设 tags 与 item 是多对多关系
@@ -319,16 +308,31 @@ func ItemList(db *gorm.DB, isDeleted bool, orderBy string, page int, pageSize in
 	}
 
 	// 根据排序字段 (orderBy)，如果为空则默认按 ID 排序
-	if orderBy != "" {
-		query = query.Order(orderBy)
+	if orderBy != nil && *orderBy != "" {
+		query = query.Order(*orderBy)
 	} else {
 		query = query.Order("items.id ASC") // 默认按 ID 升序
 	}
 
 	// 分页支持：使用 OFFSET 和 LIMIT
-	if page > 0 && pageSize > 0 {
-		query = query.Offset((page - 1) * pageSize).Limit(pageSize)
+	var page1 int
+	var pageSize1 int
+	if page != nil {
+		page1 = *page
 	}
+	if page1 < 0 {
+		page1 = 0
+	}
+	if pageSize != nil {
+		pageSize1 = *pageSize
+	}
+	if pageSize1 > 1000 {
+		pageSize1 = 1000
+	}
+	if pageSize1 < 1 {
+		pageSize1 = 1
+	}
+	query = query.Offset(page1 * pageSize1).Limit(pageSize1)
 
 	// 执行查询，查询结果为 item 的列表
 	err := query.Find(&items).Error
@@ -422,7 +426,40 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	return nil
 }
 
-func AddItem(db *gorm.DB, path string, name string, url string, annotation string, tags []uuid.UUID, folders []uuid.UUID, star uint8) error {
+func RenameFile(oldPath, Name string) error {
+	// 检查源文件是否存在
+	if _, err := os.Stat(oldPath); os.IsNotExist(err) {
+		return fmt.Errorf("file not found: %s", oldPath)
+	}
+
+	// 获取文件所在的目录
+	dir := filepath.Dir(oldPath)
+
+	// 获取旧文件的扩展名
+	ext := filepath.Ext(oldPath)
+
+	if Name == "" {
+		return fmt.Errorf("new file name is empty")
+	}
+
+	// 构造新的文件路径，附加旧文件的扩展名
+	newPath := filepath.Join(dir, Name+ext)
+
+	// 检查目标文件是否已经存在，防止覆盖
+	if _, err := os.Stat(newPath); err == nil {
+		return fmt.Errorf("file with name %s already exists", newPath)
+	}
+
+	// 执行文件重命名
+	err := os.Rename(oldPath, newPath)
+	if err != nil {
+		return fmt.Errorf("failed to rename file: %w", err)
+	}
+
+	return nil
+}
+
+func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *string, tags []uuid.UUID, folders []uuid.UUID, star *uint8, created_at *time.Time) error {
 	// 1. 根据文件路径计算 SHA-256 哈希值
 	fileID, err := CalculateFileID(path)
 	if err != nil {
@@ -433,13 +470,30 @@ func AddItem(db *gorm.DB, path string, name string, url string, annotation strin
 	var existingItem Item
 	err = db.First(&existingItem, "id = ?", fileID).Error
 	if err == nil {
-		// 如果文件已存在，更新 annotation、url、star 和 ModifiedAt
-		err = db.Model(&existingItem).Updates(map[string]interface{}{
-			"ModifiedAt": time.Now(),
-			"Annotation": annotation,
-			"Url":        url,
-			"Star":       star,
-		}).Error
+		updates := map[string]interface{}{
+			"modified_at": time.Now(),
+		}
+		// 如果文件已存在，更新 name、annotation、created_at、url、star 和 ModifiedAt
+		if name != nil {
+			err = RenameFile(filepath.Join(dbBaseDir, existingItem.ID, existingItem.Name+"."+existingItem.Ext), *name)
+			if err != nil {
+				return fmt.Errorf("db_add_item rename exist file name failed %v", err)
+			}
+			updates["name"] = *name
+		}
+		if created_at != nil {
+			updates["created_at"] = *created_at
+		}
+		if annotation != nil {
+			updates["annotation"] = *annotation
+		}
+		if url != nil {
+			updates["url"] = *url
+		}
+		if star != nil {
+			updates["star"] = *star
+		}
+		err = db.Model(&existingItem).Updates(updates).Error
 		if err != nil {
 			return fmt.Errorf("failed to update existing item: %v", err)
 		}
@@ -513,11 +567,11 @@ func AddItem(db *gorm.DB, path string, name string, url string, annotation strin
 	}
 
 	// 移动文件
-	if name == "" {
-		name = fileInfo.Name()[:len(fileInfo.Name())-len(ext)]
+	if *name == "" {
+		*name = fileInfo.Name()[:len(fileInfo.Name())-len(ext)]
 	}
 	// 构造新的目标路径
-	destPath := filepath.Join(rawFileDir, name+ext)
+	destPath := filepath.Join(rawFileDir, *name+ext)
 	// 移动并重命名文件
 	err = os.Rename(path, destPath)
 	if err != nil {
@@ -539,18 +593,21 @@ func AddItem(db *gorm.DB, path string, name string, url string, annotation strin
 		CreatedAt:   time.Now(),
 		ImportedAt:  time.Now(),
 		ModifiedAt:  time.Now(),
-		Name:        name,
+		Name:        *name,
 		Ext:         ext[1:],
 		Width:       width,
 		Height:      height,
 		Size:        fileSize,
-		Url:         url,
-		Annotation:  annotation,
+		Url:         *url,
+		Annotation:  *annotation,
 		Tags:        []Tag{},    // 待处理
 		Folders:     []Folder{}, // 待处理
-		Star:        star,
+		Star:        *star,
 		NoThumbnail: false,
 		NoPreview:   false,
+	}
+	if created_at != nil {
+		item.CreatedAt = *created_at
 	}
 
 	// 8. 处理 Tags 和 Folders 的多对多关系

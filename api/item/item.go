@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 03:28:42
+ * @LastEditTime: 2024-12-31 08:08:04
  * @FilePath: /my_eagle/api/item/item.go
  * @Description:
  *
@@ -57,25 +57,22 @@ type ItemResponse struct {
 	Data   []Item `json:"data"`
 }
 
-type ItemRequest struct {
-	Items    []ItemDetails `json:"items"`    // 图片信息列表
-	FolderID *uuid.UUID    `json:"folderId"` // 可选，文件夹 ID
-	Token    string        `json:"token"`    // API Token
-}
-
-type ItemDetails struct {
-	URL              string            `json:"url"`              // 图片链接
-	Name             string            `json:"name"`             // 图片名称
-	Website          string            `json:"website"`          // 来源网址
-	Annotation       string            `json:"annotation"`       // 注释
-	Tags             []uuid.UUID       `json:"tags"`             // 标签
-	ModificationTime string            `json:"modificationTime"` // 修改时间
-	Headers          map[string]string `json:"headers"`          // 自定义 HTTP headers
-}
-
 func AddFromUrls(c *gin.Context) {
 	// 解析请求数据
-	var req ItemRequest
+	var req struct {
+		Items []struct {
+			URL              string            `json:"url" binding:"required"` // 图片链接
+			Name             *string           `json:"name"`                   // 图片名称
+			Website          *string           `json:"website"`                // 来源网址
+			Annotation       *string           `json:"annotation"`             // 注释
+			Tags             []uuid.UUID       `json:"tags"`                   // 标签
+			ModificationTime *time.Time        `json:"modificationTime"`       // 修改时间
+			Headers          map[string]string `json:"headers"`                // 自定义 HTTP headers
+		} `json:"items" binding:"required"` // 图片信息列表
+		FolderIDs []uuid.UUID `json:"folderId"`                 // 可选，文件夹 ID
+		Token     string      `json:"token" binding:"required"` // API Token
+	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -97,8 +94,8 @@ func AddFromUrls(c *gin.Context) {
 		defer os.Remove(filePath) // 确保请求结束后删除临时文件
 
 		// 将文件路径传递给 AddItem 函数
-		folderID := req.FolderID
-		err = database.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, []uuid.UUID{*folderID}, 0)
+		star := uint8(0)
+		err = database.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, req.FolderIDs, &star, item.ModificationTime)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to add item: %v", err)})
 			return
@@ -218,20 +215,18 @@ func Update(c *gin.Context) {
 
 }
 
-type ItemListRequest struct {
-	Limit     int         `json:"limit"`
-	Offset    int         `json:"offset"`
-	OrderBy   string      `json:"order_by"`
-	Exts      []string    `json:"exts"`
-	Keyword   string      `json:"keyword"`
-	TagIDs    []uuid.UUID `json:"tags"`
-	FolderIDs []uuid.UUID `json:"folder_ids"`
-	IsDeleted bool        `json:"is_deleted"`
-	Token     string      `json:"token"`
-}
-
 func List(c *gin.Context) {
-	var req ItemListRequest
+	var req struct {
+		Limit     *int        `json:"limit"`
+		Offset    *int        `json:"offset"`
+		OrderBy   *string     `json:"order_by"`
+		Exts      []string    `json:"exts"`
+		Keyword   *string     `json:"keyword"`
+		TagIDs    []uuid.UUID `json:"tags"`
+		FolderIDs []uuid.UUID `json:"folder_ids"`
+		IsDeleted *bool       `json:"is_deleted"`
+		Token     string      `json:"token" binding:"required"`
+	}
 
 	// if req.Token != ....
 
