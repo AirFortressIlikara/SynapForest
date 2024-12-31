@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:19:47
+ * @LastEditTime: 2024-12-31 10:13:35
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -38,17 +38,17 @@ func Database_init(library_dir string) (*gorm.DB, error) {
 	os.MkdirAll(filepath.Join(DbBaseDir, "thumbnails"), os.ModePerm)
 
 	// 打开 SQLite 数据库
-	db, err := gorm.Open(sqlite.Open(filepath.Join(DbBaseDir, "files.db")), &gorm.Config{})
+	DB, err = gorm.Open(sqlite.Open(filepath.Join(DbBaseDir, "files.db")), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
 	// 自动迁移数据库
-	if err := db.AutoMigrate(&dbcommon.Item{}, &dbcommon.Folder{}, &dbcommon.Tag{}); err != nil {
+	if err := DB.AutoMigrate(&dbcommon.Item{}, &dbcommon.Folder{}, &dbcommon.Tag{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
-	return db, err
+	return DB, err
 }
 
 // 查询直接子文件夹的 UUID

@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:20:00
+ * @LastEditTime: 2024-12-31 10:21:27
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -16,6 +16,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
 	"math"
@@ -326,11 +328,12 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 	}
 
 	// 移动文件
-	if *name == "" {
-		*name = fileInfo.Name()[:len(fileInfo.Name())-len(ext)]
+	var name1 string = fileInfo.Name()[:len(fileInfo.Name())-len(ext)]
+	if name != nil && *name != "" {
+		name1 = *name
 	}
 	// 构造新的目标路径
-	destPath := filepath.Join(rawFileDir, *name+ext)
+	destPath := filepath.Join(rawFileDir, name1+ext)
 	// 移动并重命名文件
 	err = os.Rename(path, destPath)
 	if err != nil {
@@ -352,21 +355,27 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		CreatedAt:   time.Now(),
 		ImportedAt:  time.Now(),
 		ModifiedAt:  time.Now(),
-		Name:        *name,
+		Name:        name1,
 		Ext:         ext[1:],
 		Width:       width,
 		Height:      height,
 		Size:        fileSize,
-		Url:         *url,
-		Annotation:  *annotation,
 		Tags:        []dbcommon.Tag{},    // 待处理
 		Folders:     []dbcommon.Folder{}, // 待处理
-		Star:        *star,
 		NoThumbnail: false,
 		NoPreview:   false,
 	}
 	if created_at != nil {
 		item.CreatedAt = *created_at
+	}
+	if star != nil {
+		item.Star = *star
+	}
+	if url != nil {
+		item.Url = *url
+	}
+	if annotation != nil {
+		item.Annotation = *annotation
 	}
 
 	// 8. 处理 Tags 和 Folders 的多对多关系
