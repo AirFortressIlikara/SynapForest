@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 10:53:14
+ * @LastEditTime: 2024-12-31 16:36:12
  * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
@@ -238,19 +238,19 @@ func List(c *gin.Context) {
 		IsDeleted *bool       `json:"is_deleted"`
 		Token     string      `json:"token" binding:"required"`
 	}
-
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
-		})
-		return
-	}
 	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
+		})
+		return
+	}
+
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
 		})
 		return
 	}

@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:34
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 09:20:03
+ * @LastEditTime: 2024-12-31 14:35:28
  * @FilePath: /my_eagle/database/folderdb/folderdb.go
  * @Description:
  *
@@ -69,4 +69,40 @@ func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name string, description stri
 	}
 
 	return &folder, nil
+}
+
+// 查询直接子文件夹的 UUID
+func GetChildFolderIDs(db *gorm.DB, folderID uuid.UUID) ([]uuid.UUID, error) {
+	var childIDs []uuid.UUID
+
+	// 查询直接子文件夹的 UUID
+	err := db.Model(&dbcommon.Folder{}).Where("parent_id = ?", folderID).Pluck("id", &childIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return childIDs, nil
+}
+
+// UpdateFolderParents 批量更新文件夹的 ParentID
+func UpdateFolderParents(db *gorm.DB, folderIDs []uuid.UUID, newParentID uuid.UUID) error {
+	// 检查是否为空
+	if len(folderIDs) == 0 {
+		return nil // 没有要更新的文件夹
+	}
+
+	// 批量更新
+	result := db.Model(&dbcommon.Folder{}).
+		Where("id IN ?", folderIDs).
+		Update("parent_id", newParentID)
+
+	// 检查更新结果
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound // 没有匹配的记录
+	}
+
+	return nil
 }
