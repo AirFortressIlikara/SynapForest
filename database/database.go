@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 16:33:05
+ * @LastEditTime: 2025-01-01 15:17:28
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -36,6 +36,7 @@ func Database_init(library_dir string) (*gorm.DB, error) {
 	// 创建文件存储和缩略图存储目录
 	os.MkdirAll(filepath.Join(DbBaseDir, "raw_files"), os.ModePerm)
 	os.MkdirAll(filepath.Join(DbBaseDir, "thumbnails"), os.ModePerm)
+	os.MkdirAll(filepath.Join(DbBaseDir, "previews"), os.ModePerm)
 
 	// 打开 SQLite 数据库
 	DB, err = gorm.Open(sqlite.Open(filepath.Join(DbBaseDir, "files.db")), &gorm.Config{})

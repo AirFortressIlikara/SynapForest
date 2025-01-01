@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 10:51:42
+ * @LastEditTime: 2025-01-01 15:21:54
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
@@ -377,6 +378,14 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 			log.Printf("Failed to generate thumbnail: %v", err)
 		} else {
 			item.HaveThumbnail = true
+		}
+
+		previewPath := filepath.Join(database.DbBaseDir, "previews", fileID+".webp")
+		err = generateThumbnail(destPath, previewPath, 768*768)
+		if err != nil {
+			log.Printf("Failed to generate preview: %v", err)
+		} else {
+			item.HavePreview = true
 		}
 	}
 

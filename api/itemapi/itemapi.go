@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 16:36:12
+ * @LastEditTime: 2025-01-01 16:06:45
  * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
@@ -13,11 +13,13 @@ package itemapi
 import (
 	"fmt"
 	"io"
+	"my_eagle/api"
 	"my_eagle/database"
 	"my_eagle/database/itemdb"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -59,7 +61,6 @@ type ItemResponse struct {
 }
 
 func AddFromUrls(c *gin.Context) {
-	// 解析请求数据
 	var req struct {
 		Items []struct {
 			URL              string            `json:"url" binding:"required"` // 图片链接
@@ -90,7 +91,6 @@ func AddFromUrls(c *gin.Context) {
 		return
 	}
 
-	// 循环处理每个图片
 	for _, item := range req.Items {
 		filePath, err := saveFileFromURL(item.URL, item.Headers)
 		if err != nil {
@@ -99,7 +99,6 @@ func AddFromUrls(c *gin.Context) {
 		}
 		defer os.Remove(filePath) // 确保请求结束后删除临时文件
 
-		// 将文件路径传递给 AddItem 函数
 		star := uint8(0)
 		err = itemdb.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, req.FolderIDs, &star, item.ModificationTime)
 		if err != nil {
@@ -108,19 +107,16 @@ func AddFromUrls(c *gin.Context) {
 		}
 	}
 
-	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 // saveFileFromURL 下载文件并保存，返回文件路径
 func saveFileFromURL(url string, headers map[string]string) (string, error) {
-	// 发起 HTTP 请求
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}
 
-	// 添加请求头
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
@@ -148,7 +144,7 @@ func saveFileFromURL(url string, headers map[string]string) (string, error) {
 	}
 
 	// 保存文件
-	filePath := path.Join("/tmp", fileName) // 可以自定义路径
+	filePath := path.Join("/tmp", fileName)
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %v", err)
@@ -175,7 +171,6 @@ func getFileNameFromURL(url string) string {
 
 // 从 Content-Disposition 头提取文件名
 func getFileNameFromContentDisposition(contentDisposition string) string {
-	// 解析 Content-Disposition 格式: attachment; filename="example.jpg"
 	parts := strings.Split(contentDisposition, "filename=")
 	if len(parts) > 1 {
 		return strings.Trim(parts[1], "\"")
@@ -184,20 +179,11 @@ func getFileNameFromContentDisposition(contentDisposition string) string {
 }
 
 func AddFromPaths(c *gin.Context) {
-
-}
-
-func Info(c *gin.Context) {
-
-}
-
-func MoveToTrash(c *gin.Context) {
 	var req struct {
-		ItemIDs []string `json:"item_ids"`
-		Token   string   `json:"token" binding:"required"`
+		FileNames []string `json:"file_names"`
+		Token     string   `json:"token" binding:"required"`
 	}
 
-	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -213,12 +199,47 @@ func MoveToTrash(c *gin.Context) {
 		})
 		return
 	}
+	for _, filename := range req.FileNames {
+		err := itemdb.AddItem(database.DB, filepath.Join(api.UploadDir, filename), &filename, nil, nil, nil, nil, nil, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
+}
+
+func Info(c *gin.Context) {
+
+}
+
+func MoveToTrash(c *gin.Context) {
+	var req struct {
+		ItemIDs []string `json:"item_ids"`
+		Token   string   `json:"token" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+		})
+		return
+	}
+
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
+		})
+		return
+	}
+
 	err := itemdb.ItemSoftDelete(database.DB, req.ItemIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
 	}
 
-	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
@@ -238,7 +259,7 @@ func List(c *gin.Context) {
 		IsDeleted *bool       `json:"is_deleted"`
 		Token     string      `json:"token" binding:"required"`
 	}
-	// 绑定JSON数据到结构体
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -257,7 +278,6 @@ func List(c *gin.Context) {
 
 	items, err := itemdb.ItemList(database.DB, req.IsDeleted, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
 	if err != nil {
-		// 返回JSON响应
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "Item Query Failed",
@@ -268,18 +288,14 @@ func List(c *gin.Context) {
 	result := database.DB.Preload("Tags").Preload("Folders").Find(&items)
 
 	if result.Error != nil {
-		// 错误处理
 		fmt.Println("Error loading items:", result.Error)
 	}
 
-	// 构造返回值
 	resp := ItemResponse{
 		Status: "success",
 	}
 
-	// 遍历每个 Item，转换为 ItemResponse.Data 中的元素
 	for _, item := range items {
-		// 构建 ItemResponse.Data
 		dataItem := Item{
 			ID:         item.ID,
 			CreatedAt:  item.CreatedAt,
@@ -303,7 +319,6 @@ func List(c *gin.Context) {
 			HavePreview:   item.HavePreview,
 		}
 
-		// 提取 Tags 和 Folders 的 ID
 		for _, tag := range item.Tags {
 			dataItem.TagIds = append(dataItem.TagIds, tag.ID)
 		}
