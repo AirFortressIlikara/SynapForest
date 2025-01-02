@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-01 16:06:45
+ * @LastEditTime: 2025-01-02 12:38:39
  * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
@@ -200,7 +200,7 @@ func AddFromPaths(c *gin.Context) {
 		return
 	}
 	for _, filename := range req.FileNames {
-		err := itemdb.AddItem(database.DB, filepath.Join(api.UploadDir, filename), &filename, nil, nil, nil, nil, nil, nil)
+		err := itemdb.AddItem(database.DB, filepath.Join(api.UploadDir, filename), nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
 		}
@@ -215,8 +215,9 @@ func Info(c *gin.Context) {
 
 func MoveToTrash(c *gin.Context) {
 	var req struct {
-		ItemIDs []string `json:"item_ids"`
-		Token   string   `json:"token" binding:"required"`
+		ItemIDs    []string `json:"item_ids"`
+		HardDelete *bool    `json:"hard_delete"`
+		Token      string   `json:"token" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -235,7 +236,12 @@ func MoveToTrash(c *gin.Context) {
 		return
 	}
 
-	err := itemdb.ItemSoftDelete(database.DB, req.ItemIDs)
+	var err error
+	if req.HardDelete != nil && *req.HardDelete {
+		err = itemdb.ItemHardDelete(database.DB, req.ItemIDs)
+	} else {
+		err = itemdb.ItemSoftDelete(database.DB, req.ItemIDs)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
 	}
@@ -283,12 +289,6 @@ func List(c *gin.Context) {
 			"message": "Item Query Failed",
 		})
 		return
-	}
-
-	result := database.DB.Preload("Tags").Preload("Folders").Find(&items)
-
-	if result.Error != nil {
-		fmt.Println("Error loading items:", result.Error)
 	}
 
 	resp := ItemResponse{

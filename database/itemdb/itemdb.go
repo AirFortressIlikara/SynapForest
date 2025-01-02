@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-01 15:21:54
+ * @LastEditTime: 2025-01-02 12:08:44
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -81,12 +81,16 @@ func ItemList(db *gorm.DB, isDeleted *bool, orderBy *string, page *int, pageSize
 	var pageSize1 int
 	if page != nil {
 		page1 = *page
+	} else {
+		page1 = 0
 	}
 	if page1 < 0 {
 		page1 = 0
 	}
 	if pageSize != nil {
 		pageSize1 = *pageSize
+	} else {
+		pageSize1 = 1000
 	}
 	if pageSize1 > 1000 {
 		pageSize1 = 1000

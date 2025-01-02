@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2025-01-01 15:52:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-01 15:59:37
+ * @LastEditTime: 2025-01-02 12:15:04
  * @FilePath: /my_eagle/api/api.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -59,7 +59,7 @@ func ServeThumbnails(c *gin.Context) {
 	id := c.Param("id")
 
 	var Item dbcommon.Item
-	err := database.DB.First(&Item, "id = ?", id).Error
+	err := database.DB.Unscoped().First(&Item, "id = ?", id).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status": "error",
@@ -82,7 +82,7 @@ func ServePreviews(c *gin.Context) {
 	id := c.Param("id")
 
 	var Item dbcommon.Item
-	err := database.DB.First(&Item, "id = ?", id).Error
+	err := database.DB.Unscoped().First(&Item, "id = ?", id).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status": "error",
@@ -104,7 +104,7 @@ func ServeRawFile(c *gin.Context) {
 	id := c.Param("id")
 
 	var Item dbcommon.Item
-	err := database.DB.First(&Item, "id = ?", id).Error
+	err := database.DB.Unscoped().First(&Item, "id = ?", id).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status": "error",

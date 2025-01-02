@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 09:03:50
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 10:36:29
+ * @LastEditTime: 2025-01-02 11:57:03
  * @FilePath: /my_eagle/database/common/common.go
  * @Description:
  *
@@ -38,11 +38,11 @@ type Tag struct {
 }
 
 type Item struct {
-	ID         string         `json:"id" gorm:"primaryKey"` // 主键，文件的Hash
-	CreatedAt  time.Time      `json:"created_at"`           // 创建时间
-	ImportedAt time.Time      `json:"imported_at"`          // 导入时间
-	ModifiedAt time.Time      `json:"modified_at"`          // 修改时间
-	DeletedAt  gorm.DeletedAt `json:"deleted_at"`           // 删除时间
+	ID         string         `json:"id" gorm:"primaryKey"`    // 主键，文件的Hash
+	CreatedAt  time.Time      `json:"created_at"`              // 创建时间
+	ImportedAt time.Time      `json:"imported_at"`             // 导入时间
+	ModifiedAt time.Time      `json:"modified_at"`             // 修改时间
+	DeletedAt  gorm.DeletedAt `json:"deleted_at" gorm:"index"` // 删除时间
 
 	Name string `json:"name"` // 名称
 	Ext  string `json:"ext"`  // 扩展名
