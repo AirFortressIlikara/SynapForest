@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2024-12-31 14:50:47
+ * @LastEditTime: 2025-01-03 13:38:21
  * @FilePath: /my_eagle/api/folderapi/folder.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -11,6 +11,7 @@ package folderapi
 import (
 	"fmt"
 	"my_eagle/database"
+	"my_eagle/database/dbcommon"
 	"my_eagle/database/folderdb"
 	"net/http"
 	"time"
@@ -135,8 +136,8 @@ func ListFolder(c *gin.Context) {
 		return
 	}
 
-	for folderid := range folderIDs {
-		var folder Folder
+	for _, folderid := range folderIDs {
+		var folder dbcommon.Folder
 		if err := database.DB.First(&folder, folderid).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
 			return
@@ -150,7 +151,7 @@ func ListFolder(c *gin.Context) {
 			Name:        folder.Name,
 			Description: folder.Description,
 			Items:       items,
-			Parent:      folder.Parent,
+			Parent:      folder.ParentID,
 			SubFolders:  subfolders,
 			ModifiedAt:  folder.ModifiedAt,
 			Tags:        nil,

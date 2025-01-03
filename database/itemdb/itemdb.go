@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-02 12:08:44
+ * @LastEditTime: 2025-01-03 10:53:57
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -234,7 +234,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 
 	// 检查文件是否已存在
 	var existingItem dbcommon.Item
-	err = db.First(&existingItem, "id = ?", fileID).Error
+	err = db.Unscoped().First(&existingItem, "id = ?", fileID).Error
 	if err == nil {
 		updates := map[string]interface{}{
 			"modified_at": time.Now(),
