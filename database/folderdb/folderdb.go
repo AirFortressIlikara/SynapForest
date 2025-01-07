@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:34
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-03 13:37:52
+ * @LastEditTime: 2025-01-07 15:52:32
  * @FilePath: /my_eagle/database/folderdb/folderdb.go
  * @Description:
  *
@@ -48,19 +48,29 @@ func CreateFolder(db *gorm.DB, name *string, description string, icon uint32, ic
 	}
 }
 
-func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name string, description string, icon uint32, iconColor uint32, parent_id uuid.UUID) (*dbcommon.Folder, error) {
+func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name *string, description *string, icon *uint32, iconColor *uint32, parentID *uuid.UUID) (*dbcommon.Folder, error) {
 	// 查找指定 ID 的文件夹
 	var folder dbcommon.Folder
 	if err := db.First(&folder, folderID).Error; err != nil {
 		return nil, err
 	}
 
-	// 更新文件夹的字段
-	folder.Name = name
-	folder.Description = description
-	folder.Icon = icon
-	folder.IconColor = iconColor
-	folder.ParentID = parent_id
+	// 更新文件夹的字段（仅当参数不为 nil 时更新）
+	if name != nil {
+		folder.Name = *name
+	}
+	if description != nil {
+		folder.Description = *description
+	}
+	if icon != nil {
+		folder.Icon = *icon
+	}
+	if iconColor != nil {
+		folder.IconColor = *iconColor
+	}
+	if parentID != nil {
+		folder.ParentID = *parentID
+	}
 	folder.ModifiedAt = time.Now() // 更新修改时间
 
 	// 保存更新后的文件夹
