@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-02 13:00:18
+ * @LastEditTime: 2025-01-07 13:53:29
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -67,6 +67,10 @@ func main() {
 	r.POST("/api/item/moveToTrash", itemapi.MoveToTrash)
 	r.POST("/api/item/update", itemapi.Update)
 	r.POST("/api/item/list", itemapi.List)
+
+	// 注册 API
+	r.POST("/api/item/remove-folder", api.RemoveFolderForItems)
+	r.POST("/api/item/add-folder", api.AddFolderForItems)
 
 	// 启动服务
 	r.Run(":41595")

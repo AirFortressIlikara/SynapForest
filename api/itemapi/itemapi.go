@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-02 12:38:39
+ * @LastEditTime: 2025-01-07 14:39:30
  * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
@@ -253,17 +253,30 @@ func Update(c *gin.Context) {
 
 }
 
+// parseUUIDs 将字符串切片转换为 uuid.UUID 切片
+func parseUUIDs(ids []string) ([]uuid.UUID, error) {
+	var uuids []uuid.UUID
+	for _, id := range ids {
+		parsedUUID, err := uuid.FromString(id)
+		if err != nil {
+			return nil, err
+		}
+		uuids = append(uuids, parsedUUID)
+	}
+	return uuids, nil
+}
+
 func List(c *gin.Context) {
 	var req struct {
-		Limit     *int        `json:"limit"`
-		Offset    *int        `json:"offset"`
-		OrderBy   *string     `json:"order_by"`
-		Exts      []string    `json:"exts"`
-		Keyword   *string     `json:"keyword"`
-		TagIDs    []uuid.UUID `json:"tags"`
-		FolderIDs []uuid.UUID `json:"folder_ids"`
-		IsDeleted *bool       `json:"is_deleted"`
-		Token     string      `json:"token" binding:"required"`
+		Limit     *int     `json:"limit"`
+		Offset    *int     `json:"offset"`
+		OrderBy   *string  `json:"order_by"`
+		Exts      []string `json:"exts"`
+		Keyword   *string  `json:"keyword"`
+		TagIDs    []string `json:"tags"`
+		FolderIDs []string `json:"folder_ids"`
+		IsDeleted *bool    `json:"is_deleted"`
+		Token     string   `json:"token" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -282,7 +295,26 @@ func List(c *gin.Context) {
 		return
 	}
 
-	items, err := itemdb.ItemList(database.DB, req.IsDeleted, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, req.TagIDs, req.FolderIDs)
+	// 解析 TagIDs 和 FolderIDs
+	tagUUIDs, err := parseUUIDs(req.TagIDs)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid TagIDs",
+		})
+		return
+	}
+
+	folderUUIDs, err := parseUUIDs(req.FolderIDs)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid FolderIDs",
+		})
+		return
+	}
+
+	items, err := itemdb.ItemList(database.DB, req.IsDeleted, req.OrderBy, req.Offset, req.Limit, req.Exts, req.Keyword, tagUUIDs, folderUUIDs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",

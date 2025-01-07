@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-02 12:03:05
+ * @LastEditTime: 2025-01-07 13:39:14
  * @FilePath: /my_eagle/database/database.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -84,24 +84,36 @@ func GetFoldersByItemID(db *gorm.DB, itemID string) ([]uuid.UUID, error) {
 	return folderIDs, nil
 }
 
-// UpdateFoldersForItem 批量更新指定图片的所属文件夹 ID 列表
-func UpdateFoldersForItem(db *gorm.DB, itemID string, newFolderIDs []uuid.UUID) error {
-	if len(newFolderIDs) == 0 {
-		return nil // 如果没有新的文件夹 ID，直接返回
+// RemoveFoldersForItems 批量删除指定图片与某个文件夹的关联
+func RemoveFoldersForItems(db *gorm.DB, itemIDs []string, folderID uuid.UUID) error {
+	if len(itemIDs) == 0 {
+		return nil // 如果没有图片 ID，直接返回
 	}
 
 	// 开启事务
 	return db.Transaction(func(tx *gorm.DB) error {
-		// 删除图片当前的所有文件夹关联
+		// 删除指定图片与某个文件夹的关联
 		if err := tx.Table("item_folders").
-			Where("item_id = ?", itemID).
+			Where("folder_id = ? AND item_id IN (?)", folderID, itemIDs).
 			Delete(nil).Error; err != nil {
 			return err
 		}
 
+		return nil
+	})
+}
+
+// AddFolderForItems 批量添加指定图片与某个文件夹的关联
+func AddFolderForItems(db *gorm.DB, itemIDs []string, folderID uuid.UUID) error {
+	if len(itemIDs) == 0 {
+		return nil // 如果没有图片 ID，直接返回
+	}
+
+	// 开启事务
+	return db.Transaction(func(tx *gorm.DB) error {
 		// 创建新的文件夹关联
 		var records []map[string]interface{}
-		for _, folderID := range newFolderIDs {
+		for _, itemID := range itemIDs {
 			records = append(records, map[string]interface{}{
 				"item_id":   itemID,
 				"folder_id": folderID,
