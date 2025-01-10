@@ -180,7 +180,8 @@ func getFileNameFromContentDisposition(contentDisposition string) string {
 
 func AddFromPaths(c *gin.Context) {
 	var req struct {
-		FileNames []string `json:"file_names"`
+		FileNames []string `json:"file_names" binding:"required"`
+		FolderIDs []string `json:"folder_ids"`
 		Token     string   `json:"token" binding:"required"`
 	}
 
@@ -199,10 +200,25 @@ func AddFromPaths(c *gin.Context) {
 		})
 		return
 	}
+
+	var err error
+	var folderUUIDs []uuid.UUID = nil
+	if req.FolderIDs != nil {
+		folderUUIDs, err = parseUUIDs(req.FolderIDs)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Invalid FolderIDs",
+			})
+			return
+		}
+	}
+
 	for _, filename := range req.FileNames {
-		err := itemdb.AddItem(database.DB, filepath.Join(api.UploadDir, filename), nil, nil, nil, nil, nil, nil, nil)
+		err := itemdb.AddItem(database.DB, filepath.Join(api.UploadDir, filename), nil, nil, nil, nil, folderUUIDs, nil, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "failed"})
+			return
 		}
 	}
 
