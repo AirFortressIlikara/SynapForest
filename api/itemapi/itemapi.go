@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-29 12:43:00
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-07 14:39:30
+ * @LastEditTime: 2025-01-09 13:22:21
  * @FilePath: /my_eagle/api/itemapi/item.go
  * @Description:
  *
@@ -265,8 +265,90 @@ func MoveToTrash(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
+// UpdateImage 更新图片属性的 API 函数
 func Update(c *gin.Context) {
+	var req struct {
+		ID         string     `json:"id" binding:"required"`    // 图片 ID
+		Name       *string    `json:"name"`                     // 图片名称
+		Ext        *string    `json:"ext"`                      // 图片名称
+		URL        *string    `json:"url"`                      // 图片链接
+		Annotation *string    `json:"annotation"`               // 注释
+		Tags       []string   `json:"tags"`                     // 标签
+		Folders    []string   `json:"folders"`                  // 文件夹
+		Star       *uint8     `json:"star"`                     // 星级评分
+		CreatedAt  *time.Time `json:"createdAt"`                // 创建时间
+		Token      string     `json:"token" binding:"required"` // API Token
+	}
 
+	// 绑定请求数据
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+		})
+		return
+	}
+
+	// 验证 Token
+	if req.Token != database.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status":  "error",
+			"message": "Invalid token",
+		})
+		return
+	}
+
+	// 将 Tags 的字符串数组转换为 uuid.UUID 数组
+	var tagUUIDs []uuid.UUID
+	if req.Tags != nil { // 只有当 Tags 不为 nil 时才进行转换
+		for _, tagStr := range req.Tags {
+			tagUUID, err := uuid.FromString(tagStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status":  "error",
+					"message": fmt.Sprintf("Invalid tag UUID: %v", tagStr),
+				})
+				return
+			}
+			tagUUIDs = append(tagUUIDs, tagUUID)
+		}
+	} else {
+		tagUUIDs = nil
+	}
+
+	// 将 Folders 的字符串数组转换为 uuid.UUID 数组
+	var folderUUIDs []uuid.UUID
+	if req.Folders != nil { // 只有当 Folders 不为 nil 时才进行转换
+		for _, folderStr := range req.Folders {
+			folderUUID, err := uuid.FromString(folderStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status":  "error",
+					"message": fmt.Sprintf("Invalid folder UUID: %v", folderStr),
+				})
+				return
+			}
+			folderUUIDs = append(folderUUIDs, folderUUID)
+		}
+	} else {
+		folderUUIDs = nil
+	}
+
+	// 调用数据库操作函数更新图片
+	err := itemdb.UpdateItem(database.DB, req.ID, req.Name, req.Ext, req.URL, req.Annotation, tagUUIDs, folderUUIDs, req.Star, req.CreatedAt)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": fmt.Sprintf("Failed to update item: %v", err),
+		})
+		return
+	}
+
+	// 返回成功响应
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Item updated successfully",
+	})
 }
 
 // parseUUIDs 将字符串切片转换为 uuid.UUID 切片

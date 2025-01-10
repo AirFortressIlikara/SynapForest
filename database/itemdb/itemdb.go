@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2024-12-31 08:55:46
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-03 10:53:57
+ * @LastEditTime: 2025-01-09 14:04:54
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -192,7 +192,7 @@ func generateThumbnail(filePath string, thumbPath string, maxPixels int) error {
 	return nil
 }
 
-func RenameFile(oldPath, Name string) error {
+func RenameFile(oldPath string, Name string, Ext *string) error {
 	// 检查源文件是否存在
 	if _, err := os.Stat(oldPath); os.IsNotExist(err) {
 		return fmt.Errorf("file not found: %s", oldPath)
@@ -201,8 +201,13 @@ func RenameFile(oldPath, Name string) error {
 	// 获取文件所在的目录
 	dir := filepath.Dir(oldPath)
 
-	// 获取旧文件的扩展名
 	ext := filepath.Ext(oldPath)
+	if Ext != nil {
+		ext = *Ext
+		if ext != "" {
+			ext = "." + ext
+		}
+	}
 
 	if Name == "" {
 		return fmt.Errorf("new file name is empty")
@@ -241,7 +246,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		}
 		// 如果文件已存在，更新 name、annotation、created_at、url、star 和 ModifiedAt
 		if name != nil {
-			err = RenameFile(filepath.Join(database.DbBaseDir, existingItem.ID, existingItem.Name+"."+existingItem.Ext), *name)
+			err = RenameFile(filepath.Join(database.DbBaseDir, existingItem.ID, existingItem.Name+"."+existingItem.Ext), *name, nil)
 			if err != nil {
 				return fmt.Errorf("db_add_item rename exist file name failed %v", err)
 			}
@@ -414,6 +419,109 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 	err = db.Create(&item).Error
 	if err != nil {
 		return fmt.Errorf("failed to create item in database: %v", err)
+	}
+
+	return nil
+}
+
+func UpdateItem(db *gorm.DB, fileID string, name *string, ext *string, url *string, annotation *string, tags []uuid.UUID, folders []uuid.UUID, star *uint8, created_at *time.Time) error {
+	// 检查文件是否存在
+	var existingItem dbcommon.Item
+	err := db.Unscoped().First(&existingItem, "id = ?", fileID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("item with ID %s not found", fileID)
+		}
+		return fmt.Errorf("failed to query existing item: %v", err)
+	}
+
+	// 准备更新字段
+	updates := map[string]interface{}{
+		"modified_at": time.Now(),
+	}
+
+	// 更新 name
+	if name != nil || ext != nil {
+		newName := existingItem.Name
+		newExt := existingItem.Ext
+
+		if name != nil {
+			newName = *name
+		}
+		if ext != nil {
+			newExt = *ext
+		}
+		if newName != existingItem.Name || newExt != existingItem.Ext {
+			err = RenameFile(filepath.Join(database.DbBaseDir, "raw_files", existingItem.ID, existingItem.Name+"."+existingItem.Ext), newName, ext)
+			fmt.Println(newName + "." + newExt)
+			fmt.Println(filepath.Join(database.DbBaseDir, "raw_files", existingItem.ID, existingItem.Name+"."+existingItem.Ext))
+			if err != nil {
+				return fmt.Errorf("failed to rename file: %v", err)
+			}
+		}
+		updates["name"] = newName
+		updates["ext"] = newExt
+	}
+
+	// 更新 created_at
+	if created_at != nil {
+		updates["created_at"] = *created_at
+	}
+
+	// 更新 annotation
+	if annotation != nil {
+		updates["annotation"] = *annotation
+	}
+
+	// 更新 url
+	if url != nil {
+		updates["url"] = *url
+	}
+
+	// 更新 star
+	if star != nil {
+		updates["star"] = *star
+	}
+
+	// 执行更新
+	err = db.Model(&existingItem).Updates(updates).Error
+	if err != nil {
+		return fmt.Errorf("failed to update existing item: %v", err)
+	}
+
+	// 处理 Tags 和 Folders 的多对多关系
+	if tags != nil {
+		// 清空现有的 Tags 关联
+		err = db.Model(&existingItem).Association("Tags").Clear()
+		if err != nil {
+			return fmt.Errorf("failed to clear tags: %v", err)
+		}
+
+		// 添加新的 Tags
+		for _, tagID := range tags {
+			tag := dbcommon.Tag{ID: tagID}
+			err = db.Model(&existingItem).Association("Tags").Append(&tag)
+			if err != nil {
+				return fmt.Errorf("failed to append tag: %v", err)
+			}
+		}
+	}
+
+	if folders != nil {
+		// 清空现有的 Folders 关联
+		err = db.Model(&existingItem).Association("Folders").Clear()
+		if err != nil {
+			return fmt.Errorf("failed to clear folders: %v", err)
+		}
+
+		// 添加新的 Folders
+		for _, folderID := range folders {
+			folder := dbcommon.Folder{ID: folderID}
+			err = db.Model(&existingItem).Association("Folders").Append(&folder)
+			if err != nil {
+				return fmt.Errorf("failed to append folder: %v", err)
+			}
+		}
 	}
 
 	return nil
