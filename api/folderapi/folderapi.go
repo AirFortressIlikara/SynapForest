@@ -78,7 +78,7 @@ func CreateFolder(c *gin.Context) {
 	resp := FolderResponse{
 		Status: "success",
 	}
-	subfolders, _ := folderdb.GetChildFolderIDs(database.DB, folder.ID)
+	subfolders, _ := folderdb.GetChildFolderIDs(database.DB, &folder.ID)
 	items, _ := database.GetItemIDsByFolder(database.DB, folder.ID)
 	data := Folder{
 		ID:          folder.ID,
@@ -126,9 +126,12 @@ func ListFolder(c *gin.Context) {
 		Status: "success",
 	}
 
-	var parent uuid.UUID
+	var parent *uuid.UUID = nil
 	if req.Parent != nil {
-		parent, _ = uuid.FromString(*req.Parent)
+		// 创建一个新的 uuid.UUID 实例
+		parsedUUID, _ := uuid.FromString(*req.Parent)
+		// 将 parent 指向新创建的 uuid.UUID 实例
+		parent = &parsedUUID
 	}
 
 	folderIDs, err := folderdb.GetChildFolderIDs(database.DB, parent)
@@ -145,7 +148,7 @@ func ListFolder(c *gin.Context) {
 		} else {
 			fmt.Printf("Found Folder: %v\n", folder)
 		}
-		subfolders, _ := folderdb.GetChildFolderIDs(database.DB, folder.ID)
+		subfolders, _ := folderdb.GetChildFolderIDs(database.DB, &folder.ID)
 		items, _ := database.GetItemIDsByFolder(database.DB, folder.ID)
 		data := Folder{
 			ID:          folder.ID,
@@ -156,7 +159,7 @@ func ListFolder(c *gin.Context) {
 			SubFolders:  subfolders,
 			ModifiedAt:  folder.ModifiedAt,
 			Tags:        nil,
-			IsExpand:    false,
+			IsExpand:    folder.IsExpand,
 		}
 		resp.Data = append(resp.Data, data)
 	}
@@ -233,7 +236,7 @@ func UpdateFolder(c *gin.Context) {
 	resp := FolderResponse{
 		Status: "success",
 	}
-	subfolders, _ := folderdb.GetChildFolderIDs(database.DB, folder.ID)
+	subfolders, _ := folderdb.GetChildFolderIDs(database.DB, &folder.ID)
 	items, _ := database.GetItemIDsByFolder(database.DB, folder.ID)
 	data := Folder{
 		ID:          folder.ID,

@@ -13,6 +13,7 @@ import (
 	"my_eagle/database/dbcommon"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"gorm.io/driver/sqlite"
@@ -22,6 +23,17 @@ import (
 var Token string = "TEST123123"
 var DB *gorm.DB
 var DbBaseDir string
+
+func CreateRootFolder(db *gorm.DB) error {
+	rootFolder := dbcommon.Folder{
+		ID:         uuid.Nil,
+		Name:       "Root",
+		IsExpand:   true,
+		CreatedAt:  time.Now(),
+		ModifiedAt: time.Now(),
+	}
+	return db.Create(&rootFolder).Error
+}
 
 func Database_init(library_dir string) (*gorm.DB, error) {
 	var err error
@@ -49,6 +61,7 @@ func Database_init(library_dir string) (*gorm.DB, error) {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
+	CreateRootFolder(DB)
 	return DB, err
 }
 

@@ -82,11 +82,20 @@ func UpdateFolder(db *gorm.DB, folderID uuid.UUID, name *string, description *st
 }
 
 // 查询直接子文件夹的 UUID
-func GetChildFolderIDs(db *gorm.DB, folderID uuid.UUID) ([]uuid.UUID, error) {
+func GetChildFolderIDs(db *gorm.DB, folderID *uuid.UUID) ([]uuid.UUID, error) {
 	var childIDs []uuid.UUID
+	var err error
 
-	// 查询直接子文件夹的 UUID
-	err := db.Model(&dbcommon.Folder{}).Where("parent_id = ?", folderID).Pluck("id", &childIDs).Error
+	if folderID == nil {
+		// 查询所有文件夹的 ID
+		err = db.Model(&dbcommon.Folder{}).Pluck("id", &childIDs).Error
+	} else {
+		// 查询直接子文件夹的 UUID
+		err = db.Model(&dbcommon.Folder{}).
+			Where("parent_id = ? AND id != ?", folderID, folderID).
+			Pluck("id", &childIDs).Error
+	}
+
 	if err != nil {
 		return nil, err
 	}

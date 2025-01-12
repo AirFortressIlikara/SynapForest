@@ -101,7 +101,7 @@ func ItemList(db *gorm.DB, isDeleted *bool, orderBy *string, page *int, pageSize
 	query = query.Offset(page1 * pageSize1).Limit(pageSize1)
 
 	// 执行查询，查询结果为 item 的列表
-	err := query.Find(&items).Error
+	err := query.Preload("Folders").Preload("Tags").Find(&items).Error
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
