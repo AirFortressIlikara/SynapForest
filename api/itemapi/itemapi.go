@@ -1,12 +1,20 @@
 /*
- * @Author: ilikara 3435193369@qq.com
- * @Date: 2024-12-29 12:43:00
- * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-09 13:22:21
- * @FilePath: /my_eagle/api/itemapi/item.go
+ * @Author: Ilikara 3435193369@qq.com
+ * @Date: 2025-01-10 15:53:51
+ * @LastEditors: Ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-01-26 16:03:14
+ * @FilePath: /my_eagle/api/itemapi/itemapi.go
  * @Description:
  *
- * Copyright (c) 2024 by ${git_name_email}, All Rights Reserved.
+ * Copyright (c) 2025 AirFortressIlikara
+ * SynapForest is licensed under Mulan PubL v2.
+ * You can use this software according to the terms and conditions of the Mulan PubL v2.
+ * You may obtain a copy of Mulan PubL v2 at:
+ *          http://license.coscl.org.cn/MulanPubL-2.0
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PubL v2 for more details.
  */
 package itemapi
 
@@ -45,8 +53,8 @@ type Item struct {
 	Url        string `json:"url"`        // 文件来源URL
 	Annotation string `json:"annotation"` // 注释
 
-	TagIds    []uuid.UUID `json:"tag_id"`    // Tags ID列表
-	FolderIds []uuid.UUID `json:"folder_id"` // 文件夹ID列表
+	TagIds    []uuid.UUID `json:"tag_ids"`    // Tags ID列表
+	FolderIds []uuid.UUID `json:"folder_ids"` // 文件夹ID列表
 
 	// Palettes []uint32 `json:"palettes"` // 色票（这是什么？）
 	Star uint8 `json:"star"` // 星级评分
