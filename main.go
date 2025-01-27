@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-27 20:43:39
+ * @LastEditTime: 2025-01-27 22:10:44
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -41,10 +41,8 @@ func main() {
 		log.Fatalf("failed init Api: %v", err)
 	}
 
-	// 启动 Gin Web 框架
 	r := gin.Default()
 
-	// 配置 CORS 中间件
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"}, // 允许所有域名
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -53,35 +51,37 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	r.Use(api.AuthMiddleware())
+	publicRoutes := r.Group("/public")
+	{
+		publicRoutes.GET("/thumbnails/:id", api.ServeThumbnails)
+		publicRoutes.GET("/raw_files/:id", api.ServeRawFile)
+		publicRoutes.GET("/previews/:id", api.ServePreviews)
+	}
 
-	// 设置路由，:id 表示动态参数
-	r.GET("/thumbnails/:id", api.ServeThumbnails)
-	r.GET("/raw_files/:id", api.ServeRawFile)
-	r.GET("/previews/:id", api.ServePreviews)
+	privateRoutes := r.Group("/api")
+	privateRoutes.Use(api.AuthMiddleware())
+	{
+		privateRoutes.POST("/uploadfiles", api.Uploadfiles)
 
-	r.POST("/api/uploadfiles", api.Uploadfiles)
+		privateRoutes.POST("/folder/create", folderapi.CreateFolder)
+		privateRoutes.POST("/folder/list", folderapi.ListFolder)
+		privateRoutes.POST("/folder/update", folderapi.UpdateFolder)
 
-	r.POST("/api/folder/create", folderapi.CreateFolder)
-	r.POST("/api/folder/list", folderapi.ListFolder)
-	r.POST("/api/folder/update", folderapi.UpdateFolder)
+		// 预想tag和folder逻辑一致
+		privateRoutes.POST("/tag/create", folderapi.CreateFolder)
+		privateRoutes.POST("/tag/list", folderapi.ListFolder)
+		privateRoutes.POST("/tag/update", folderapi.UpdateFolder)
 
-	// 预想tag和folder逻辑一致
-	r.POST("/api/tag/create", folderapi.CreateFolder)
-	r.POST("/api/tag/list", folderapi.ListFolder)
-	r.POST("/api/tag/update", folderapi.UpdateFolder)
+		privateRoutes.POST("/item/addFromUrls", itemapi.AddFromUrls)
+		privateRoutes.POST("/item/addFromPaths", itemapi.AddFromPaths)
+		privateRoutes.POST("/item/info", itemapi.Info)
+		privateRoutes.POST("/item/moveToTrash", itemapi.MoveToTrash)
+		privateRoutes.POST("/item/update", itemapi.Update)
+		privateRoutes.POST("/item/list", itemapi.List)
 
-	r.POST("/api/item/addFromUrls", itemapi.AddFromUrls)
-	r.POST("/api/item/addFromPaths", itemapi.AddFromPaths)
-	r.POST("/api/item/info", itemapi.Info)
-	r.POST("/api/item/moveToTrash", itemapi.MoveToTrash)
-	r.POST("/api/item/update", itemapi.Update)
-	r.POST("/api/item/list", itemapi.List)
+		privateRoutes.POST("/item/remove-folder", api.RemoveFolderForItems)
+		privateRoutes.POST("/item/add-folder", api.AddFolderForItems)
+	}
 
-	// 注册 API
-	r.POST("/api/item/remove-folder", api.RemoveFolderForItems)
-	r.POST("/api/item/add-folder", api.AddFolderForItems)
-
-	// 启动服务
 	r.Run(":41595")
 }
