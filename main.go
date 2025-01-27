@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-26 16:04:49
+ * @LastEditTime: 2025-01-27 20:43:39
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -52,6 +52,8 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	r.Use(api.AuthMiddleware())
 
 	// 设置路由，:id 表示动态参数
 	r.GET("/thumbnails/:id", api.ServeThumbnails)

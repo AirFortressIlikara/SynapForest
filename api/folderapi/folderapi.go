@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-26 16:03:39
+ * @LastEditTime: 2025-01-27 20:53:35
  * @FilePath: /my_eagle/api/folderapi/folderapi.go
  * @Description:
  *
@@ -54,22 +54,12 @@ func CreateFolder(c *gin.Context) {
 	var req struct {
 		FolderName *string   `json:"folderName"`
 		Parent     uuid.UUID `json:"parent"`
-
-		Token string `json:"token" binding:"required"`
 	}
 	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -110,8 +100,6 @@ func CreateFolder(c *gin.Context) {
 func ListFolder(c *gin.Context) {
 	var req struct {
 		Parent *string `json:"parent"`
-
-		Token string `json:"token" binding:"required"`
 	}
 
 	// 绑定JSON数据到结构体
@@ -119,14 +107,6 @@ func ListFolder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -186,8 +166,6 @@ func UpdateFolder(c *gin.Context) {
 		Icon        *uint32 `json:"icon"`
 		IconColor   *uint32 `json:"iconColor"`
 		Parent      *string `json:"parent"` // 使用 string 类型接收 UUID
-
-		Token string `json:"token" binding:"required"`
 	}
 
 	// 绑定 JSON 数据到结构体
@@ -195,15 +173,6 @@ func UpdateFolder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	// 验证 Token
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}

@@ -1,10 +1,20 @@
 /*
- * @Author: ilikara 3435193369@qq.com
- * @Date: 2025-01-01 15:52:53
- * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-07 13:52:38
+ * @Author: Ilikara 3435193369@qq.com
+ * @Date: 2025-01-09 19:59:53
+ * @LastEditors: Ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-01-27 20:51:47
  * @FilePath: /my_eagle/api/api.go
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description:
+ *
+ * Copyright (c) 2025 AirFortressIlikara
+ * SynapForest is licensed under Mulan PubL v2.
+ * You can use this software according to the terms and conditions of the Mulan PubL v2.
+ * You may obtain a copy of Mulan PubL v2 at:
+ *          http://license.coscl.org.cn/MulanPubL-2.0
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PubL v2 for more details.
  */
 package api
 
@@ -39,7 +49,7 @@ func Uploadfiles(c *gin.Context) {
 		return
 	}
 
-	files := form.File["files"] // 获取表单中的多个文件
+	files := form.File["files"]
 	var savedFiles []string
 
 	for _, file := range files {
@@ -56,7 +66,6 @@ func Uploadfiles(c *gin.Context) {
 
 // ServeImage 根据 id 返回图片
 func ServeThumbnails(c *gin.Context) {
-	// 从 URL 路由获取 id
 	id := c.Param("id")
 
 	var Item dbcommon.Item
@@ -67,7 +76,6 @@ func ServeThumbnails(c *gin.Context) {
 		})
 	}
 	if Item.HaveThumbnail {
-		// 构建图片路径
 		imagePath := filepath.Join(database.DbBaseDir, "thumbnails", id+".webp")
 		c.File(imagePath)
 	} else {
@@ -79,7 +87,6 @@ func ServeThumbnails(c *gin.Context) {
 }
 
 func ServePreviews(c *gin.Context) {
-	// 从 URL 路由获取 id
 	id := c.Param("id")
 
 	var Item dbcommon.Item
@@ -90,7 +97,6 @@ func ServePreviews(c *gin.Context) {
 		})
 	}
 	if Item.HavePreview {
-		// 构建图片路径
 		imagePath := filepath.Join(database.DbBaseDir, "previews", id+".webp")
 		c.File(imagePath)
 	} else {
@@ -122,7 +128,6 @@ func RemoveFolderForItems(c *gin.Context) {
 	var req struct {
 		ItemIDs  []string `json:"item_ids" binding:"required"`  // 图片 ID 列表
 		FolderID string   `json:"folder_id" binding:"required"` // 文件夹 ID
-		Token    string   `json:"token" binding:"required"`     // 鉴权 Token
 	}
 
 	// 绑定 JSON 数据到结构体
@@ -130,15 +135,6 @@ func RemoveFolderForItems(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	// 鉴权
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -173,10 +169,8 @@ func AddFolderForItems(c *gin.Context) {
 	var req struct {
 		ItemIDs  []string `json:"item_ids" binding:"required"`  // 图片 ID 列表
 		FolderID string   `json:"folder_id" binding:"required"` // 文件夹 ID
-		Token    string   `json:"token" binding:"required"`     // 鉴权 Token
 	}
 
-	// 绑定 JSON 数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -185,16 +179,6 @@ func AddFolderForItems(c *gin.Context) {
 		return
 	}
 
-	// 鉴权
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
-		})
-		return
-	}
-
-	// 解析文件夹 ID
 	folderID, err := uuid.FromString(req.FolderID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -204,7 +188,6 @@ func AddFolderForItems(c *gin.Context) {
 		return
 	}
 
-	// 调用批量添加函数
 	if err := database.AddFolderForItems(database.DB, req.ItemIDs, folderID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
@@ -213,7 +196,6 @@ func AddFolderForItems(c *gin.Context) {
 		return
 	}
 
-	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "Folder associations added successfully",

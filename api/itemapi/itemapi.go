@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-26 16:03:14
+ * @LastEditTime: 2025-01-27 20:53:03
  * @FilePath: /my_eagle/api/itemapi/itemapi.go
  * @Description:
  *
@@ -79,22 +79,13 @@ func AddFromUrls(c *gin.Context) {
 			ModificationTime *time.Time        `json:"modificationTime"`       // 修改时间
 			Headers          map[string]string `json:"headers"`                // 自定义 HTTP headers
 		} `json:"items" binding:"required"` // 图片信息列表
-		FolderIDs []uuid.UUID `json:"folderId"`                 // 可选，文件夹 ID
-		Token     string      `json:"token" binding:"required"` // API Token
+		FolderIDs []uuid.UUID `json:"folderId"` // 可选，文件夹 ID
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -190,21 +181,12 @@ func AddFromPaths(c *gin.Context) {
 	var req struct {
 		FileNames []string `json:"file_names" binding:"required"`
 		FolderIDs []string `json:"folder_ids"`
-		Token     string   `json:"token" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -241,21 +223,12 @@ func MoveToTrash(c *gin.Context) {
 	var req struct {
 		ItemIDs    []string `json:"item_ids"`
 		HardDelete *bool    `json:"hard_delete"`
-		Token      string   `json:"token" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -276,16 +249,15 @@ func MoveToTrash(c *gin.Context) {
 // UpdateImage 更新图片属性的 API 函数
 func Update(c *gin.Context) {
 	var req struct {
-		ID         string     `json:"id" binding:"required"`    // 图片 ID
-		Name       *string    `json:"name"`                     // 图片名称
-		Ext        *string    `json:"ext"`                      // 图片名称
-		URL        *string    `json:"url"`                      // 图片链接
-		Annotation *string    `json:"annotation"`               // 注释
-		Tags       []string   `json:"tags"`                     // 标签
-		Folders    []string   `json:"folders"`                  // 文件夹
-		Star       *uint8     `json:"star"`                     // 星级评分
-		CreatedAt  *time.Time `json:"createdAt"`                // 创建时间
-		Token      string     `json:"token" binding:"required"` // API Token
+		ID         string     `json:"id" binding:"required"` // 图片 ID
+		Name       *string    `json:"name"`                  // 图片名称
+		Ext        *string    `json:"ext"`                   // 图片名称
+		URL        *string    `json:"url"`                   // 图片链接
+		Annotation *string    `json:"annotation"`            // 注释
+		Tags       []string   `json:"tags"`                  // 标签
+		Folders    []string   `json:"folders"`               // 文件夹
+		Star       *uint8     `json:"star"`                  // 星级评分
+		CreatedAt  *time.Time `json:"createdAt"`             // 创建时间
 	}
 
 	// 绑定请求数据
@@ -293,15 +265,6 @@ func Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "Invalid request data",
-		})
-		return
-	}
-
-	// 验证 Token
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
 		})
 		return
 	}
@@ -382,7 +345,6 @@ func List(c *gin.Context) {
 		TagIDs    []string `json:"tags"`
 		FolderIDs []string `json:"folder_ids"`
 		IsDeleted *bool    `json:"is_deleted"`
-		Token     string   `json:"token" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -393,15 +355,6 @@ func List(c *gin.Context) {
 		return
 	}
 
-	if req.Token != database.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"status":  "error",
-			"message": "Invalid token",
-		})
-		return
-	}
-
-	// 解析 TagIDs 和 FolderIDs
 	tagUUIDs, err := parseUUIDs(req.TagIDs)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
