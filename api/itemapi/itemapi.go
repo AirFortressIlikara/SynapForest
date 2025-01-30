@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-27 20:53:03
+ * @LastEditTime: 2025-01-30 19:22:07
  * @FilePath: /my_eagle/api/itemapi/itemapi.go
  * @Description:
  *
@@ -96,7 +96,7 @@ func AddFromUrls(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to download file: %v", err)})
 			return
 		}
-		defer os.Remove(filePath) // 确保请求结束后删除临时文件
+		defer os.Remove(filePath)
 
 		star := uint8(0)
 		err = itemdb.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, req.FolderIDs, &star, item.ModificationTime)
@@ -127,14 +127,11 @@ func saveFileFromURL(url string, headers map[string]string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	// 尝试从响应头的 Content-Disposition 中提取文件名
 	fileName := getFileNameFromContentDisposition(resp.Header.Get("Content-Disposition"))
 	if fileName == "" {
-		// 如果响应头没有文件名，则从 URL 中推断文件名
 		fileName = getFileNameFromURL(url)
 	}
 
-	// 如果文件名仍然为空，使用文件内容的 SHA256 哈希值
 	if fileName == "" {
 		fileName, err = itemdb.CalculateSHA256(resp.Body)
 		if err != nil {
@@ -142,7 +139,6 @@ func saveFileFromURL(url string, headers map[string]string) (string, error) {
 		}
 	}
 
-	// 保存文件
 	filePath := path.Join("/tmp", fileName)
 	outFile, err := os.Create(filePath)
 	if err != nil {
@@ -260,7 +256,6 @@ func Update(c *gin.Context) {
 		CreatedAt  *time.Time `json:"createdAt"`             // 创建时间
 	}
 
-	// 绑定请求数据
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -269,9 +264,8 @@ func Update(c *gin.Context) {
 		return
 	}
 
-	// 将 Tags 的字符串数组转换为 uuid.UUID 数组
 	var tagUUIDs []uuid.UUID
-	if req.Tags != nil { // 只有当 Tags 不为 nil 时才进行转换
+	if req.Tags != nil {
 		for _, tagStr := range req.Tags {
 			tagUUID, err := uuid.FromString(tagStr)
 			if err != nil {
@@ -287,7 +281,6 @@ func Update(c *gin.Context) {
 		tagUUIDs = nil
 	}
 
-	// 将 Folders 的字符串数组转换为 uuid.UUID 数组
 	var folderUUIDs []uuid.UUID
 	if req.Folders != nil { // 只有当 Folders 不为 nil 时才进行转换
 		for _, folderStr := range req.Folders {
@@ -305,7 +298,6 @@ func Update(c *gin.Context) {
 		folderUUIDs = nil
 	}
 
-	// 调用数据库操作函数更新图片
 	err := itemdb.UpdateItem(database.DB, req.ID, req.Name, req.Ext, req.URL, req.Annotation, tagUUIDs, folderUUIDs, req.Star, req.CreatedAt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -315,7 +307,6 @@ func Update(c *gin.Context) {
 		return
 	}
 
-	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "Item updated successfully",

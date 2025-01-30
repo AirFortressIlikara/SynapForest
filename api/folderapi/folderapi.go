@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-27 20:53:35
+ * @LastEditTime: 2025-01-30 19:22:49
  * @FilePath: /my_eagle/api/folderapi/folderapi.go
  * @Description:
  *
@@ -55,7 +55,7 @@ func CreateFolder(c *gin.Context) {
 		FolderName *string   `json:"folderName"`
 		Parent     uuid.UUID `json:"parent"`
 	}
-	// 绑定JSON数据到结构体
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -66,7 +66,6 @@ func CreateFolder(c *gin.Context) {
 
 	folder, err := folderdb.CreateFolder(database.DB, req.FolderName, "", 0, 0, req.Parent, false)
 	if err != nil {
-		// 返回JSON响应
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "Folder Create Failed",
@@ -74,7 +73,6 @@ func CreateFolder(c *gin.Context) {
 		return
 	}
 
-	// 构建响应数据
 	resp := FolderResponse{
 		Status: "success",
 	}
@@ -93,7 +91,6 @@ func CreateFolder(c *gin.Context) {
 	}
 	resp.Data = append(resp.Data, data)
 
-	// 返回JSON响应
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -102,7 +99,6 @@ func ListFolder(c *gin.Context) {
 		Parent *string `json:"parent"`
 	}
 
-	// 绑定JSON数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -111,16 +107,13 @@ func ListFolder(c *gin.Context) {
 		return
 	}
 
-	// 构建响应数据
 	resp := FolderResponse{
 		Status: "success",
 	}
 
 	var parent *uuid.UUID = nil
 	if req.Parent != nil {
-		// 创建一个新的 uuid.UUID 实例
 		parsedUUID, _ := uuid.FromString(*req.Parent)
-		// 将 parent 指向新创建的 uuid.UUID 实例
 		parent = &parsedUUID
 	}
 
@@ -154,7 +147,6 @@ func ListFolder(c *gin.Context) {
 		resp.Data = append(resp.Data, data)
 	}
 
-	// 返回JSON响应
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -168,7 +160,6 @@ func UpdateFolder(c *gin.Context) {
 		Parent      *string `json:"parent"` // 使用 string 类型接收 UUID
 	}
 
-	// 绑定 JSON 数据到结构体
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -177,7 +168,6 @@ func UpdateFolder(c *gin.Context) {
 		return
 	}
 
-	// 将 FolderID 从 string 转换为 uuid.UUID
 	folderID, err := uuid.FromString(req.FolderID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -187,7 +177,6 @@ func UpdateFolder(c *gin.Context) {
 		return
 	}
 
-	// 将 Parent 从 string 转换为 uuid.UUID（如果 Parent 不为 nil）
 	var parentID *uuid.UUID
 	if req.Parent != nil {
 		parent, err := uuid.FromString(*req.Parent)
@@ -201,7 +190,6 @@ func UpdateFolder(c *gin.Context) {
 		parentID = &parent
 	}
 
-	// 调用 UpdateFolder 函数更新文件夹
 	folder, err := folderdb.UpdateFolder(database.DB, folderID, req.FolderName, req.Description, req.Icon, req.IconColor, parentID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -211,7 +199,6 @@ func UpdateFolder(c *gin.Context) {
 		return
 	}
 
-	// 构建响应数据
 	resp := FolderResponse{
 		Status: "success",
 	}
@@ -230,6 +217,5 @@ func UpdateFolder(c *gin.Context) {
 	}
 	resp.Data = append(resp.Data, data)
 
-	// 返回 JSON 响应
 	c.JSON(http.StatusOK, resp)
 }
