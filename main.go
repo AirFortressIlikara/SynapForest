@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-27 22:10:44
+ * @LastEditTime: 2025-02-02 17:35:40
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -24,6 +24,7 @@ import (
 	"my_eagle/api"
 	"my_eagle/api/folderapi"
 	"my_eagle/api/itemapi"
+	"my_eagle/api/vectorapi"
 	"my_eagle/database"
 
 	"github.com/gin-contrib/cors"
@@ -56,6 +57,8 @@ func main() {
 		publicRoutes.GET("/thumbnails/:id", api.ServeThumbnails)
 		publicRoutes.GET("/raw_files/:id", api.ServeRawFile)
 		publicRoutes.GET("/previews/:id", api.ServePreviews)
+
+		publicRoutes.POST("/vectorize/:id", vectorapi.HandleVectorize)
 	}
 
 	privateRoutes := r.Group("/api")

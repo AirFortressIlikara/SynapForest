@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-30 19:21:14
+ * @LastEditTime: 2025-02-02 17:20:04
  * @FilePath: /my_eagle/database/itemdb/itemdb.go
  * @Description:
  *
@@ -524,4 +524,27 @@ func ItemHardDelete(db *gorm.DB, itemIDs []string) error {
 	}
 
 	return nil
+}
+
+// GetItemsByIDs 根据给定的 ID 数组获取对应的 Item 数组
+func GetItemsByIDs(db *gorm.DB, ids []string) ([]dbcommon.Item, error) {
+	var items []dbcommon.Item
+
+	// 如果 ID 数组为空，直接返回空数组
+	if len(ids) == 0 {
+		return items, nil
+	}
+
+	// 查询数据库，获取符合条件的 items
+	err := db.Model(&dbcommon.Item{}).
+		Where("id IN ?", ids).
+		Preload("Folders").
+		Preload("Tags").
+		Find(&items).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query items by IDs: %v", err)
+	}
+
+	return items, nil
 }

@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-26 16:04:13
+ * @LastEditTime: 2025-02-02 17:49:56
  * @FilePath: /my_eagle/database/dbcommon/dbcommon.go
  * @Description:
  *
@@ -90,4 +90,12 @@ type Folder struct {
 	Items []Item `gorm:"many2many:item_folders;"`
 
 	IsExpand bool `json:"is_expand"`
+}
+
+type ItemVector struct {
+	ItemID     string         `gorm:"primaryKey"`
+	ImageVec   []byte         `gorm:"type:blob"`
+	CreatedAt  time.Time      `json:"created_at"`  // 创建时间
+	ModifiedAt time.Time      `json:"modified_at"` // 修改时间
+	DeletedAt  gorm.DeletedAt `json:"deleted_at"`  // 删除时间
 }

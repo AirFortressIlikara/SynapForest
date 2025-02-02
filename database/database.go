@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-30 19:23:28
+ * @LastEditTime: 2025-02-02 17:12:24
  * @FilePath: /my_eagle/database/database.go
  * @Description:
  *
@@ -32,6 +32,7 @@ import (
 
 var Token string = "TEST123123"
 var DB *gorm.DB
+var VectorDB *gorm.DB
 var DbBaseDir string
 
 func CreateRootFolder(db *gorm.DB) error {
@@ -63,12 +64,25 @@ func Database_init(library_dir string) (*gorm.DB, error) {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
+	VectorDB, err = gorm.Open(sqlite.Open(filepath.Join(DbBaseDir, "vectors.db")), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+
 	// 启用SQLite的WAL
 	DB.Exec("PRAGMA journal_mode=WAL;")
 
 	DB = DB.Debug()
 
+	VectorDB.Exec("PRAGMA journal_mode=WAL;")
+
+	VectorDB = VectorDB.Debug()
+
 	if err := DB.AutoMigrate(&dbcommon.Item{}, &dbcommon.Folder{}, &dbcommon.Tag{}); err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
+
+	if err := VectorDB.AutoMigrate(&dbcommon.ItemVector{}); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
