@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-30 19:22:49
+ * @LastEditTime: 2025-02-03 12:54:32
  * @FilePath: /my_eagle/api/folderapi/folderapi.go
  * @Description:
  *
@@ -19,6 +19,7 @@
 package folderapi
 
 import (
+	"errors"
 	"fmt"
 	"my_eagle/database"
 	"my_eagle/database/dbcommon"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
+	"gorm.io/gorm"
 )
 
 type Folder struct {
@@ -218,4 +220,71 @@ func UpdateFolder(c *gin.Context) {
 	resp.Data = append(resp.Data, data)
 
 	c.JSON(http.StatusOK, resp)
+}
+
+func UpdateFoldersParent(c *gin.Context) {
+	var req struct {
+		FolderIDs []string `json:"folderIds" binding:"required"` // 要更新的文件夹ID数组
+		NewParent *string  `json:"newParent"`                    // 新的父文件夹ID
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+		})
+		return
+	}
+
+	// 将 FolderIDs 转换为 uuid.UUID 数组
+	var folderIDs []uuid.UUID
+	for _, folderIDStr := range req.FolderIDs {
+		folderID, err := uuid.FromString(folderIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": fmt.Sprintf("Invalid folder ID: %s", folderIDStr),
+			})
+			return
+		}
+		folderIDs = append(folderIDs, folderID)
+	}
+
+	// 处理新的父文件夹ID
+	var newParentID uuid.UUID
+	if req.NewParent != nil {
+		parent, err := uuid.FromString(*req.NewParent)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Invalid new parent folder ID",
+			})
+			return
+		}
+		newParentID = parent
+	} else {
+		newParentID = uuid.Nil
+	}
+
+	// 调用 folderdb.UpdateFolderParents 进行批量更新
+	err := folderdb.UpdateFolderParents(database.DB, folderIDs, newParentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status":  "error",
+				"message": "No matching folders found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Failed to update folders",
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Folders updated successfully",
+	})
 }
