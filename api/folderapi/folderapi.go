@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-03 12:54:32
+ * @LastEditTime: 2025-02-03 15:32:07
  * @FilePath: /my_eagle/api/folderapi/folderapi.go
  * @Description:
  *
@@ -39,9 +39,9 @@ type Folder struct {
 	Items       []string  `json:"items"`
 
 	Parent     uuid.UUID   `json:"parent"`
-	SubFolders []uuid.UUID `json:"sub_folders"`
+	SubFolders []uuid.UUID `json:"subFolders"`
 
-	ModifiedAt time.Time `json:"modified_at"`
+	ModifiedAt time.Time `json:"modifiedAt"`
 	Tags       []string  `json:"tags"`
 	IsExpand   bool      `json:"isExpand"`
 }

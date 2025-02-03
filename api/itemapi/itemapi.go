@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-03 14:41:37
+ * @LastEditTime: 2025-02-03 16:40:02
  * @FilePath: /my_eagle/api/itemapi/itemapi.go
  * @Description:
  *
@@ -38,10 +38,10 @@ import (
 
 type Item struct {
 	ID         string         `json:"id" gorm:"primaryKey"` // 主键，文件的Hash
-	CreatedAt  time.Time      `json:"created_at"`           // 创建时间
-	ImportedAt time.Time      `json:"imported_at"`          // 导入时间
-	ModifiedAt time.Time      `json:"modified_at"`          // 修改时间
-	DeletedAt  gorm.DeletedAt `json:"deleted_at"`           // 删除时间
+	CreatedAt  time.Time      `json:"createdAt"`            // 创建时间
+	ImportedAt time.Time      `json:"importedAt"`           // 导入时间
+	ModifiedAt time.Time      `json:"modifiedAt"`           // 修改时间
+	DeletedAt  gorm.DeletedAt `json:"deletedAt"`            // 删除时间
 
 	Name string `json:"name"` // 名称
 	Ext  string `json:"ext"`  // 扩展名
@@ -53,14 +53,14 @@ type Item struct {
 	Url        string `json:"url"`        // 文件来源URL
 	Annotation string `json:"annotation"` // 注释
 
-	TagIds    []uuid.UUID `json:"tag_ids"`    // Tags ID列表
-	FolderIds []uuid.UUID `json:"folder_ids"` // 文件夹ID列表
+	TagIds    []uuid.UUID `json:"tagIds"`    // Tags ID列表
+	FolderIds []uuid.UUID `json:"folderIds"` // 文件夹ID列表
 
 	// Palettes []uint32 `json:"palettes"` // 色票（这是什么？）
 	Star uint8 `json:"star"` // 星级评分
 
-	HaveThumbnail bool `json:"have_thumbnail"` // 是否有缩略图
-	HavePreview   bool `json:"have_preview"`   // 是否有预览图
+	HaveThumbnail bool `json:"haveThumbnail"` // 是否有缩略图
+	HavePreview   bool `json:"havePreview"`   // 是否有预览图
 }
 
 type ItemResponse struct {
@@ -333,7 +333,7 @@ func List(c *gin.Context) {
 		OrderBy   *string  `json:"orderBy"`
 		Exts      []string `json:"exts"`
 		Keyword   *string  `json:"keyword"`
-		TagIDs    []string `json:"tags"`
+		TagIDs    []string `json:"tagIds"`
 		FolderIDs []string `json:"folderIds"`
 		IsDeleted *bool    `json:"isDeleted"`
 	}
