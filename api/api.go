@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-27 20:51:47
+ * @LastEditTime: 2025-02-03 14:42:12
  * @FilePath: /my_eagle/api/api.go
  * @Description:
  *
@@ -126,8 +126,8 @@ func ServeRawFile(c *gin.Context) {
 
 func RemoveFolderForItems(c *gin.Context) {
 	var req struct {
-		ItemIDs  []string `json:"item_ids" binding:"required"`  // 图片 ID 列表
-		FolderID string   `json:"folder_id" binding:"required"` // 文件夹 ID
+		ItemIDs  []string `json:"itemIds" binding:"required"`  // 图片 ID 列表
+		FolderID string   `json:"folderId" binding:"required"` // 文件夹 ID
 	}
 
 	// 绑定 JSON 数据到结构体
@@ -167,8 +167,8 @@ func RemoveFolderForItems(c *gin.Context) {
 
 func AddFolderForItems(c *gin.Context) {
 	var req struct {
-		ItemIDs  []string `json:"item_ids" binding:"required"`  // 图片 ID 列表
-		FolderID string   `json:"folder_id" binding:"required"` // 文件夹 ID
+		ItemIDs  []string `json:"itemIds" binding:"required"`  // 图片 ID 列表
+		FolderID string   `json:"folderId" binding:"required"` // 文件夹 ID
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

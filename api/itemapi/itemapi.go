@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-30 19:22:07
+ * @LastEditTime: 2025-02-03 14:41:37
  * @FilePath: /my_eagle/api/itemapi/itemapi.go
  * @Description:
  *
@@ -79,7 +79,7 @@ func AddFromUrls(c *gin.Context) {
 			ModificationTime *time.Time        `json:"modificationTime"`       // 修改时间
 			Headers          map[string]string `json:"headers"`                // 自定义 HTTP headers
 		} `json:"items" binding:"required"` // 图片信息列表
-		FolderIDs []uuid.UUID `json:"folderId"` // 可选，文件夹 ID
+		FolderIDs []uuid.UUID `json:"folderIds"` // 可选，文件夹 ID
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -175,8 +175,8 @@ func getFileNameFromContentDisposition(contentDisposition string) string {
 
 func AddFromPaths(c *gin.Context) {
 	var req struct {
-		FileNames []string `json:"file_names" binding:"required"`
-		FolderIDs []string `json:"folder_ids"`
+		FileNames []string `json:"fileNames" binding:"required"`
+		FolderIDs []string `json:"folderIds"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -217,8 +217,8 @@ func Info(c *gin.Context) {
 
 func MoveToTrash(c *gin.Context) {
 	var req struct {
-		ItemIDs    []string `json:"item_ids"`
-		HardDelete *bool    `json:"hard_delete"`
+		ItemIDs    []string `json:"itemIds"`
+		HardDelete *bool    `json:"hardDelete"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -330,12 +330,12 @@ func List(c *gin.Context) {
 	var req struct {
 		Limit     *int     `json:"limit"`
 		Offset    *int     `json:"offset"`
-		OrderBy   *string  `json:"order_by"`
+		OrderBy   *string  `json:"orderBy"`
 		Exts      []string `json:"exts"`
 		Keyword   *string  `json:"keyword"`
 		TagIDs    []string `json:"tags"`
-		FolderIDs []string `json:"folder_ids"`
-		IsDeleted *bool    `json:"is_deleted"`
+		FolderIDs []string `json:"folderIds"`
+		IsDeleted *bool    `json:"isDeleted"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
