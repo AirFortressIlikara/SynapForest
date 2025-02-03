@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-02 17:35:40
+ * @LastEditTime: 2025-02-03 12:56:51
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -69,6 +69,7 @@ func main() {
 		privateRoutes.POST("/folder/create", folderapi.CreateFolder)
 		privateRoutes.POST("/folder/list", folderapi.ListFolder)
 		privateRoutes.POST("/folder/update", folderapi.UpdateFolder)
+		privateRoutes.POST("/folder/updateParent", folderapi.UpdateFoldersParent)
 
 		// 预想tag和folder逻辑一致
 		privateRoutes.POST("/tag/create", folderapi.CreateFolder)
