@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-03 15:32:07
+ * @LastEditTime: 2025-02-05 20:22:39
  * @FilePath: /my_eagle/api/folderapi/folderapi.go
  * @Description:
  *
@@ -220,6 +220,44 @@ func UpdateFolder(c *gin.Context) {
 	resp.Data = append(resp.Data, data)
 
 	c.JSON(http.StatusOK, resp)
+}
+
+func DeleteFolder(c *gin.Context) {
+	var req struct {
+		FolderID    string `json:"folderId" binding:"required"` // 使用 string 类型接收 UUID
+		HardDelete  *bool  `json:"hardDelete"`                  // 由于不知道软删除文件夹有什么意义，暂时忽略该项
+		DeleteItems *bool  `json:"deleteItems"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+		})
+		return
+	}
+
+	folderID, err := uuid.FromString(req.FolderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid folder ID",
+		})
+		return
+	}
+
+	if err := folderdb.DeleteFolder(database.DB, folderID, req.HardDelete, req.DeleteItems); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Folder delete failed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Folders deleted successfully",
+	})
 }
 
 func UpdateFoldersParent(c *gin.Context) {

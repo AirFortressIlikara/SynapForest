@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-26 16:04:20
+ * @LastEditTime: 2025-02-05 20:39:52
  * @FilePath: /my_eagle/database/folderdb/folderdb.go
  * @Description:
  *
@@ -129,6 +129,69 @@ func UpdateFolderParents(db *gorm.DB, folderIDs []uuid.UUID, newParentID uuid.UU
 	}
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound // 没有匹配的记录
+	}
+
+	return nil
+}
+
+// 递归获取所有子文件夹的ID
+func getChildFolderIDs(db *gorm.DB, folderID uuid.UUID) ([]uuid.UUID, error) {
+	var folderIDs []uuid.UUID
+	var childFolders []dbcommon.Folder
+
+	if err := db.Where("parent_id = ?", folderID).Find(&childFolders).Error; err != nil {
+		return nil, err
+	}
+
+	folderIDs = append(folderIDs, folderID)
+
+	for _, child := range childFolders {
+		childIDs, err := getChildFolderIDs(db, child.ID)
+		if err != nil {
+			return nil, err
+		}
+		folderIDs = append(folderIDs, childIDs...)
+	}
+
+	return folderIDs, nil
+}
+
+// 删除文件夹及其子文件夹
+func DeleteFolder(db *gorm.DB, folderID uuid.UUID, hardDelete *bool, deleteAssociatedFiles *bool) error {
+	folderIDs, err := getChildFolderIDs(db, folderID)
+	if err != nil {
+		return err
+	}
+
+	if deleteAssociatedFiles != nil && *deleteAssociatedFiles {
+		// 获取所有关联的 item_id
+		var itemIDs []string
+		if err := db.Table("item_folders").
+			Select("item_id").
+			Where("folder_id IN ?", folderIDs).
+			Pluck("item_id", &itemIDs).Error; err != nil {
+			return err
+		}
+
+		// 软删除关联的文件
+		if err := db.Delete(&dbcommon.Item{}, itemIDs).Error; err != nil {
+			return err
+		}
+	} else {
+		// 删除文件夹和文件的关联关系
+		if err := db.Exec("DELETE FROM item_folders WHERE folder_id IN ?", folderIDs).Error; err != nil {
+			return err
+		}
+	}
+
+	if true { // 由于不知道软删除文件夹有什么意义，暂时忽略该项
+		if err := db.Unscoped().Delete(&dbcommon.Folder{}, "id IN ?", folderIDs).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := db.Delete(&dbcommon.Folder{}, "id IN ?", folderIDs).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil
