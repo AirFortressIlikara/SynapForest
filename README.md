@@ -1,7 +1,25 @@
-# my_eagle
+<!--
+ * @Author: Ilikara 3435193369@qq.com
+ * @Date: 2024-12-28 15:06:55
+ * @LastEditors: Ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-02-10 20:27:57
+ * @FilePath: /my_eagle/README.md
+ * @Description: 
+ * 
+ * Copyright (c) 2025 AirFortressIlikara
+ * SynapForest is licensed under Mulan PubL v2.
+ * You can use this software according to the terms and conditions of the Mulan PubL v2.
+ * You may obtain a copy of Mulan PubL v2 at:
+ *          http://license.coscl.org.cn/MulanPubL-2.0
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PubL v2 for more details.
+-->
+# SynapForest
 
-对闭源软件Eagle的开源复刻尝试
+[前端项目地址](https://github.com/AirFortressIlikara/SynapForest-Leaf)
 
-使用go+gin
+API使用Gin框架开发
 
-数据库使用qorm+sqlite
+数据库使用GORM+SQLite
