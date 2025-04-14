@@ -1,8 +1,8 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-02 17:12:24
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-02-21 08:10:10
  * @FilePath: /my_eagle/database/database.go
  * @Description:
  *
@@ -137,26 +137,38 @@ func RemoveFoldersForItems(db *gorm.DB, itemIDs []string, folderID uuid.UUID) er
 	})
 }
 
-// AddFolderForItems 批量添加指定图片与某个文件夹的关联
-func AddFolderForItems(db *gorm.DB, itemIDs []string, folderID uuid.UUID) error {
-	if len(itemIDs) == 0 {
+// AddFolderForItems 批量添加指定图片与多个文件夹的关联
+func AddFolderForItems(db *gorm.DB, itemIDs []string, folderIDs []uuid.UUID) error {
+	if len(itemIDs) == 0 || len(folderIDs) == 0 {
 		return nil
 	}
 
 	return db.Transaction(func(tx *gorm.DB) error {
 		var records []map[string]interface{}
 		for _, itemID := range itemIDs {
-			records = append(records, map[string]interface{}{
-				"item_id":   itemID,
-				"folder_id": folderID,
-			})
+			for _, folderID := range folderIDs {
+				// 检查记录是否已经存在
+				var count int64
+				if err := tx.Table("item_folders").
+					Where("item_id = ? AND folder_id = ?", itemID, folderID).
+					Count(&count).Error; err != nil {
+					return err
+				}
+
+				// 如果记录不存在，则插入
+				if count == 0 {
+					records = append(records, map[string]interface{}{
+						"item_id":   itemID,
+						"folder_id": folderID,
+					})
+				}
+			}
 		}
 		if len(records) > 0 {
 			if err := tx.Table("item_folders").Create(records).Error; err != nil {
 				return err
 			}
 		}
-
 		return nil
 	})
 }

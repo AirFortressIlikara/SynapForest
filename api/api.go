@@ -1,8 +1,8 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-03 14:42:12
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-02-21 07:46:27
  * @FilePath: /my_eagle/api/api.go
  * @Description:
  *
@@ -167,8 +167,8 @@ func RemoveFolderForItems(c *gin.Context) {
 
 func AddFolderForItems(c *gin.Context) {
 	var req struct {
-		ItemIDs  []string `json:"itemIds" binding:"required"`  // 图片 ID 列表
-		FolderID string   `json:"folderId" binding:"required"` // 文件夹 ID
+		ItemIDs   []string `json:"itemIds" binding:"required"`   // 图片 ID 列表
+		FolderIDs []string `json:"folderIds" binding:"required"` // 文件夹 ID
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -179,16 +179,20 @@ func AddFolderForItems(c *gin.Context) {
 		return
 	}
 
-	folderID, err := uuid.FromString(req.FolderID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": "Invalid folder ID",
-		})
-		return
+	var folderIDs []uuid.UUID
+	for _, folderStr := range req.FolderIDs {
+		folderUUID, err := uuid.FromString(folderStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": fmt.Sprintf("Invalid tag UUID: %v", folderStr),
+			})
+			return
+		}
+		folderIDs = append(folderIDs, folderUUID)
 	}
 
-	if err := database.AddFolderForItems(database.DB, req.ItemIDs, folderID); err != nil {
+	if err := database.AddFolderForItems(database.DB, req.ItemIDs, folderIDs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "Failed to add folder associations",
