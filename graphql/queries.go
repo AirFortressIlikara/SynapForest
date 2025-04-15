@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2025-04-14 15:02:37
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 02:48:23
+ * @LastEditTime: 2025-04-15 06:22:46
  * @FilePath: /SynapForest/graphql/queries.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"my_eagle/database"
 	"my_eagle/database/dbcommon"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/graphql-go/graphql"
@@ -275,6 +276,153 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				return folder, nil
+			},
+		},
+		"items": &graphql.Field{
+			Type: graphql.NewList(itemType),
+			Args: graphql.FieldConfigArgument{
+				"folderIds": &graphql.ArgumentConfig{
+					Type:        graphql.NewList(graphql.String),
+					Description: "List of folder IDs to filter items",
+				},
+				"tagIds": &graphql.ArgumentConfig{
+					Type:        graphql.NewList(graphql.String),
+					Description: "List of tag IDs to filter items",
+				},
+				"folderLogic": &graphql.ArgumentConfig{
+					Type:         graphql.String,
+					DefaultValue: "OR",
+					Description:  "Logic to apply for folder filtering (AND/OR)",
+				},
+				"tagLogic": &graphql.ArgumentConfig{
+					Type:         graphql.String,
+					DefaultValue: "OR",
+					Description:  "Logic to apply for tag filtering (AND/OR)",
+				},
+				"combinedLogic": &graphql.ArgumentConfig{
+					Type:         graphql.String,
+					DefaultValue: "AND",
+					Description:  "Logic to combine folder and tag filters (AND/OR)",
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				folderIds, _ := p.Args["folderIds"].([]interface{})
+				tagIds, _ := p.Args["tagIds"].([]interface{})
+				folderLogic, _ := p.Args["folderLogic"].(string)
+				folderLogic = strings.ToUpper(folderLogic)
+				tagLogic, _ := p.Args["tagLogic"].(string)
+				tagLogic = strings.ToUpper(tagLogic)
+				combinedLogic, _ := p.Args["combinedLogic"].(string)
+
+				// 转换ID为字符串切片
+				var folderIDStrs []string
+				for _, id := range folderIds {
+					if str, ok := id.(string); ok {
+						folderIDStrs = append(folderIDStrs, str)
+					}
+				}
+
+				var tagIDStrs []string
+				for _, id := range tagIds {
+					if str, ok := id.(string); ok {
+						tagIDStrs = append(tagIDStrs, str)
+					}
+				}
+
+				query := database.DB.Model(&dbcommon.Item{}).Distinct("items.*")
+
+				var folderQuery, tagQuery *gorm.DB
+				// 构建文件夹条件
+				if len(folderIDStrs) > 0 {
+					folderQuery = database.DB.
+						Select("item_id").
+						Table("item_folders").
+						Where("folder_id IN (?)", folderIDStrs)
+
+					switch {
+					case folderLogic == "EQUAL":
+						// 精确匹配：必须且只能包含这些文件夹
+						// 先找出包含所有指定文件夹的item
+						folderQuery = folderQuery.
+							Group("item_folders.item_id").
+							Having("COUNT(DISTINCT item_folders.folder_id) = ?", len(folderIDStrs))
+
+						// 然后排除那些还包含其他文件夹的item
+						query = query.
+							Where("NOT EXISTS (SELECT 1 FROM item_folders WHERE item_folders.item_id = items.id AND item_folders.folder_id NOT IN (?))", folderIDStrs)
+					case folderLogic == "AND":
+						// AND 逻辑：必须包含所有指定的文件夹（但可以包含其他文件夹）
+						folderQuery = folderQuery.
+							Group("item_id").
+							Having("COUNT(DISTINCT folder_id) = ?", len(folderIDStrs))
+					case folderLogic == "OR":
+						// OR 逻辑：只需包含任意一个指定的文件夹
+						// 不需要额外处理
+					}
+				}
+
+				// 构建标签条件
+				if len(tagIDStrs) > 0 {
+					tagQuery = database.DB.
+						Select("item_id").
+						Table("item_tags").
+						Where("tag_id IN (?)", tagIDStrs)
+
+					switch {
+					case tagLogic == "EQUAL":
+						// 精确匹配：必须且只能包含这些标签
+						// 先找出包含所有指定标签的item
+						tagQuery = tagQuery.
+							Group("item_tags.item_id").
+							Having("COUNT(DISTINCT item_tags.tag_id) = ?", len(tagIDStrs))
+
+						// 然后排除那些还包含其他标签的item
+						query = query.
+							Where("NOT EXISTS (SELECT 1 FROM item_tags WHERE item_tags.item_id = items.id AND item_tags.tag_id NOT IN (?))", tagIDStrs)
+					case tagLogic == "AND":
+						// AND 逻辑：必须包含所有指定的标签（但可以包含其他标签）
+						tagQuery = tagQuery.
+							Group("item_id").
+							Having("COUNT(DISTINCT tag_id) = ?", len(tagIDStrs))
+					case tagLogic == "OR":
+						// OR 逻辑：只需包含任意一个指定的标签
+						// 不需要额外处理
+					}
+				}
+
+				// 组合文件夹和标签条件（统一 JOIN 处理）
+				if len(folderIDStrs) > 0 && len(tagIDStrs) > 0 {
+					if combinedLogic == "OR" {
+						// OR 逻辑：使用 UNION 组合 folderQuery 和 tagQuery
+						combinedQuery := database.DB.
+							Table("(?) UNION (?) AS combined_items",
+								folderQuery.Select("item_id"),
+								tagQuery.Select("item_id")).
+							Select("DISTINCT item_id")
+						query = query.Joins("JOIN (?) AS combined_items ON combined_items.item_id = items.id", combinedQuery)
+					} else {
+						// AND 逻辑（默认）：分别 JOIN folderQuery 和 tagQuery
+						query = query.
+							Joins("JOIN (?) AS folder_items ON folder_items.item_id = items.id", folderQuery).
+							Joins("JOIN (?) AS tag_items ON tag_items.item_id = items.id", tagQuery)
+					}
+				} else if len(folderIDStrs) > 0 {
+					// 只有文件夹条件
+					query = query.Joins("JOIN (?) AS folder_items ON folder_items.item_id = items.id", folderQuery)
+				} else if len(tagIDStrs) > 0 {
+					// 只有标签条件
+					query = query.Joins("JOIN (?) AS tag_items ON tag_items.item_id = items.id", tagQuery)
+				}
+
+				// 预加载关联数据
+				query = query.Preload("Folders").Preload("Tags")
+
+				var items []dbcommon.Item
+				if err := query.Find(&items).Error; err != nil {
+					return nil, fmt.Errorf("failed to query items: %w", err)
+				}
+
+				return items, nil
 			},
 		},
 	},
