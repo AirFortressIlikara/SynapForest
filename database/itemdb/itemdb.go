@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-02 17:20:04
- * @FilePath: /my_eagle/database/itemdb/itemdb.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:51:33
+ * @FilePath: /SynapForest/database/itemdb/itemdb.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -34,8 +34,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"my_eagle/database"
-	"my_eagle/database/dbcommon"
+	"synapforest/database"
+	"synapforest/database/dbcommon"
 
 	"github.com/chai2010/webp"
 	"github.com/gofrs/uuid"

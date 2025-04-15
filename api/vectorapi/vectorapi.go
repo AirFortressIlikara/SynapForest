@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-02-02 17:25:29
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-02 17:49:46
- * @FilePath: /my_eagle/api/vectorapi/vectorapi.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:50:22
+ * @FilePath: /SynapForest/api/vectorapi/vectorapi.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -20,12 +20,12 @@ package vectorapi
 
 import (
 	"fmt"
-	"my_eagle/database"
-	"my_eagle/database/dbcommon"
-	"my_eagle/database/itemdb"
-	"my_eagle/vector"
 	"net/http"
 	"path/filepath"
+	"synapforest/database"
+	"synapforest/database/dbcommon"
+	"synapforest/database/itemdb"
+	"synapforest/vector"
 	"time"
 
 	"github.com/gin-gonic/gin"

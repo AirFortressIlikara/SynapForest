@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-02-02 17:13:19
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-02 17:48:37
- * @FilePath: /my_eagle/vector/vector.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:52:43
+ * @FilePath: /SynapForest/vector/vector.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara

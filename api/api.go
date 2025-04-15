@@ -2,8 +2,8 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-21 07:46:27
- * @FilePath: /my_eagle/api/api.go
+ * @LastEditTime: 2025-04-15 06:51:13
+ * @FilePath: /SynapForest/api/api.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -20,11 +20,11 @@ package api
 
 import (
 	"fmt"
-	"my_eagle/database"
-	"my_eagle/database/dbcommon"
 	"net/http"
 	"os"
 	"path/filepath"
+	"synapforest/database"
+	"synapforest/database/dbcommon"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
@@ -36,7 +36,7 @@ func ApiInit(uploadDir string) error {
 	UploadDir = filepath.Join(database.DbBaseDir, uploadDir)
 	if _, err := os.Stat(UploadDir); os.IsNotExist(err) {
 		if err := os.Mkdir(UploadDir, os.ModePerm); err != nil {
-			return fmt.Errorf("Failed to create upload directory: %v", err)
+			return fmt.Errorf("failed to create upload directory: %v", err)
 		}
 	}
 	return nil

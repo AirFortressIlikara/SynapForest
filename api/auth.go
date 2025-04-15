@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-27 16:41:59
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-01-27 20:43:18
- * @FilePath: /my_eagle/api/auth.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:50:40
+ * @FilePath: /SynapForest/api/auth.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -19,8 +19,8 @@
 package api
 
 import (
-	"my_eagle/database"
 	"net/http"
+	"synapforest/database"
 
 	"github.com/gin-gonic/gin"
 )

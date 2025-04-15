@@ -1,4 +1,4 @@
-module my_eagle
+module synapforest
 
 go 1.22.2
 

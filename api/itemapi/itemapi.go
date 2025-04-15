@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-10 15:53:51
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-03 16:40:02
- * @FilePath: /my_eagle/api/itemapi/itemapi.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:50:01
+ * @FilePath: /SynapForest/api/itemapi/itemapi.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -21,14 +21,14 @@ package itemapi
 import (
 	"fmt"
 	"io"
-	"my_eagle/api"
-	"my_eagle/database"
-	"my_eagle/database/itemdb"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"synapforest/api"
+	"synapforest/database"
+	"synapforest/database/itemdb"
 	"time"
 
 	"github.com/gin-gonic/gin"

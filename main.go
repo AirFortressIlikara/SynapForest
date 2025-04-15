@@ -2,8 +2,8 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-14 16:08:34
- * @FilePath: /my_eagle/main.go
+ * @LastEditTime: 2025-04-15 06:51:53
+ * @FilePath: /SynapForest/main.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -21,12 +21,12 @@ package main
 import (
 	"log"
 
-	"my_eagle/api"
-	"my_eagle/api/folderapi"
-	"my_eagle/api/graphql"
-	"my_eagle/api/itemapi"
-	"my_eagle/api/vectorapi"
-	"my_eagle/database"
+	"synapforest/api"
+	"synapforest/api/folderapi"
+	"synapforest/api/graphql"
+	"synapforest/api/itemapi"
+	"synapforest/api/vectorapi"
+	"synapforest/database"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

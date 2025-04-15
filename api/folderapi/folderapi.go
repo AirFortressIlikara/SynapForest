@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-05 20:22:39
- * @FilePath: /my_eagle/api/folderapi/folderapi.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:50:44
+ * @FilePath: /SynapForest/api/folderapi/folderapi.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -21,10 +21,10 @@ package folderapi
 import (
 	"errors"
 	"fmt"
-	"my_eagle/database"
-	"my_eagle/database/dbcommon"
-	"my_eagle/database/folderdb"
 	"net/http"
+	"synapforest/database"
+	"synapforest/database/dbcommon"
+	"synapforest/database/folderdb"
 	"time"
 
 	"github.com/gin-gonic/gin"

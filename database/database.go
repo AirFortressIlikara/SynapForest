@@ -2,8 +2,8 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-21 08:10:10
- * @FilePath: /my_eagle/database/database.go
+ * @LastEditTime: 2025-04-15 06:51:39
+ * @FilePath: /SynapForest/database/database.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -20,9 +20,9 @@ package database
 
 import (
 	"log"
-	"my_eagle/database/dbcommon"
 	"os"
 	"path/filepath"
+	"synapforest/database/dbcommon"
 	"time"
 
 	"github.com/gofrs/uuid"

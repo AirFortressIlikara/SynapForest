@@ -1,9 +1,9 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-05 20:39:52
- * @FilePath: /my_eagle/database/folderdb/folderdb.go
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-15 06:51:27
+ * @FilePath: /SynapForest/database/folderdb/folderdb.go
  * @Description:
  *
  * Copyright (c) 2025 AirFortressIlikara
@@ -21,7 +21,7 @@ package folderdb
 import (
 	"fmt"
 	"log"
-	"my_eagle/database/dbcommon"
+	"synapforest/database/dbcommon"
 	"time"
 
 	"github.com/gofrs/uuid"
