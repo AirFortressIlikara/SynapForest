@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:51:39
+ * @LastEditTime: 2025-04-15 07:05:12
  * @FilePath: /SynapForest/database/database.go
  * @Description:
  *
@@ -37,13 +37,16 @@ var DbBaseDir string
 
 func CreateRootFolder(db *gorm.DB) error {
 	rootFolder := dbcommon.Folder{
-		ID:         uuid.Nil,
+		ID:         uuid.Nil, // Root 文件夹 ID 固定为 uuid.Nil
 		Name:       "Root",
 		IsExpand:   true,
 		CreatedAt:  time.Now(),
 		ModifiedAt: time.Now(),
 	}
-	return db.Create(&rootFolder).Error
+
+	// 使用 FirstOrCreate 避免重复创建
+	result := db.Where(dbcommon.Folder{ID: uuid.Nil}).FirstOrCreate(&rootFolder)
+	return result.Error
 }
 
 func Database_init(library_dir string) (*gorm.DB, error) {
