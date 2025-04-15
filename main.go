@@ -1,8 +1,8 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-02-05 19:50:45
+ * @LastEditors: ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-04-14 16:08:34
  * @FilePath: /my_eagle/main.go
  * @Description:
  *
@@ -23,6 +23,7 @@ import (
 
 	"my_eagle/api"
 	"my_eagle/api/folderapi"
+	"my_eagle/api/graphql"
 	"my_eagle/api/itemapi"
 	"my_eagle/api/vectorapi"
 	"my_eagle/database"
@@ -86,6 +87,10 @@ func main() {
 
 		privateRoutes.POST("/item/remove-folder", api.RemoveFolderForItems)
 		privateRoutes.POST("/item/add-folder", api.AddFolderForItems)
+
+		gqlHandler := graphql.NewHandler()
+		r.GET("/graphql", gin.WrapH(gqlHandler))
+		r.POST("/graphql", gin.WrapH(gqlHandler))
 	}
 
 	r.Run(":41595")

@@ -7,6 +7,8 @@ require (
 	github.com/gin-contrib/cors v1.7.3
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gofrs/uuid v4.4.0+incompatible
+	github.com/graphql-go/graphql v0.8.1
+	github.com/graphql-go/handler v0.2.4
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
