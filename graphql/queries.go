@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2025-04-14 15:02:37
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-17 11:18:18
+ * @LastEditTime: 2025-04-17 12:28:09
  * @FilePath: /SynapForest/graphql/queries.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -211,8 +211,8 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 		"folder": &graphql.Field{
 			Type: graphql.NewList(folderType),
 			Args: graphql.FieldConfigArgument{
-				"id": &graphql.ArgumentConfig{
-					Type: graphql.String,
+				"ids": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.String),
 				},
 				"itemIds": &graphql.ArgumentConfig{
 					Type: graphql.NewList(graphql.String),
@@ -233,7 +233,7 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				id, _ := p.Args["id"].(string)
+				ids, _ := p.Args["ids"].([]interface{})
 				itemIds, _ := p.Args["itemIds"].([]interface{})
 				includeItems, _ := p.Args["includeItems"].(bool)
 				includeFolders, _ := p.Args["includeFolders"].(bool)
@@ -252,13 +252,12 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 				var err error
 
 				// 根据参数决定查询方式
-				if id != "" {
-					// 通过文件夹ID查询单个文件夹
-					var folder dbcommon.Folder
-					if err = database.DB.First(&folder, "id = ?", id).Error; err != nil {
+				if len(ids) > 0 {
+					var folderList []dbcommon.Folder
+					if err = database.DB.Where("id IN (?)", ids).Find(&folderList).Error; err != nil {
 						return nil, err
 					}
-					folders = append(folders, folder)
+					folders = append(folders, folderList...)
 				} else if len(itemIDStrings) > 0 {
 					// 通过itemIds查询关联的文件夹
 					if err = database.DB.
