@@ -2,7 +2,7 @@
  * @Author: ilikara 3435193369@qq.com
  * @Date: 2025-04-14 15:02:37
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:48:16
+ * @LastEditTime: 2025-04-17 11:18:18
  * @FilePath: /SynapForest/graphql/queries.go
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -209,10 +209,13 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
 		"folder": &graphql.Field{
-			Type: folderType,
+			Type: graphql.NewList(folderType),
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.String),
+					Type: graphql.String,
+				},
+				"itemIds": &graphql.ArgumentConfig{
+					Type: graphql.NewList(graphql.String),
 				},
 				"includeItems": &graphql.ArgumentConfig{
 					Type:         graphql.Boolean,
@@ -231,51 +234,87 @@ var RootQuery = graphql.NewObject(graphql.ObjectConfig{
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				id, _ := p.Args["id"].(string)
+				itemIds, _ := p.Args["itemIds"].([]interface{})
 				includeItems, _ := p.Args["includeItems"].(bool)
 				includeFolders, _ := p.Args["includeFolders"].(bool)
 				itemFields, _ := p.Args["itemFields"].([]interface{})
 				folderFields, _ := p.Args["folderFields"].([]interface{})
 
-				var folder dbcommon.Folder
-				if err := database.DB.First(&folder, "id = ?", id).Error; err != nil {
-					return nil, err
+				// 处理 itemIds 参数，转换为字符串切片
+				var itemIDStrings []string
+				for _, id := range itemIds {
+					if str, ok := id.(string); ok {
+						itemIDStrings = append(itemIDStrings, str)
+					}
 				}
 
-				if includeItems {
-					// 根据 itemFields 选择性加载字段
-					query := database.DB.Model(&dbcommon.Item{})
-					if len(itemFields) > 0 {
-						var selectedFields []string
-						for _, field := range itemFields {
-							if f, ok := field.(string); ok {
-								selectedFields = append(selectedFields, f)
-							}
-						}
-						query = query.Select(selectedFields)
-					}
-					if err := query.Where("id = ?", id).Find(&folder.Items).Error; err != nil {
+				var folders []dbcommon.Folder
+				var err error
+
+				// 根据参数决定查询方式
+				if id != "" {
+					// 通过文件夹ID查询单个文件夹
+					var folder dbcommon.Folder
+					if err = database.DB.First(&folder, "id = ?", id).Error; err != nil {
 						return nil, err
 					}
-				}
-
-				if includeFolders {
-					// 根据 folderFields 选择性加载字段
-					query := database.DB.Model(&dbcommon.Folder{})
-					if len(folderFields) > 0 {
-						var selectedFields []string
-						for _, field := range folderFields {
-							if f, ok := field.(string); ok {
-								selectedFields = append(selectedFields, f)
-							}
-						}
-						query = query.Select(selectedFields)
-					}
-					if err := query.Where("parent_id = ?", id).Find(&folder.Children).Error; err != nil {
+					folders = append(folders, folder)
+				} else if len(itemIDStrings) > 0 {
+					// 通过itemIds查询关联的文件夹
+					if err = database.DB.
+						Select("folders.*").
+						Joins("JOIN item_folders ON item_folders.folder_id = folders.id").
+						Where("item_folders.item_id IN (?)", itemIDStrings).
+						Group("folders.id").
+						Having("COUNT(DISTINCT item_folders.item_id) = ?", len(itemIDStrings)).
+						Find(&folders).Error; err != nil {
 						return nil, err
 					}
+				} else {
+					return nil, fmt.Errorf("必须提供id或itemIds参数")
 				}
 
-				return folder, nil
+				// 处理每个文件夹的关联数据
+				for i := range folders {
+					folder := &folders[i]
+
+					if includeItems {
+						// 根据 itemFields 选择性加载字段
+						query := database.DB.Model(&dbcommon.Item{})
+						if len(itemFields) > 0 {
+							var selectedFields []string
+							for _, field := range itemFields {
+								if f, ok := field.(string); ok {
+									selectedFields = append(selectedFields, f)
+								}
+							}
+							query = query.Select(selectedFields)
+						}
+						// 根据实际关联关系调整查询条件
+						if err := query.Where("id = ?", folder.ID).Find(&folder.Items).Error; err != nil {
+							return nil, err
+						}
+					}
+
+					if includeFolders {
+						// 根据 folderFields 选择性加载字段
+						query := database.DB.Model(&dbcommon.Folder{})
+						if len(folderFields) > 0 {
+							var selectedFields []string
+							for _, field := range folderFields {
+								if f, ok := field.(string); ok {
+									selectedFields = append(selectedFields, f)
+								}
+							}
+							query = query.Select(selectedFields)
+						}
+						if err := query.Where("parent_id = ?", folder.ID).Find(&folder.Children).Error; err != nil {
+							return nil, err
+						}
+					}
+				}
+
+				return folders, nil
 			},
 		},
 		"items": &graphql.Field{
