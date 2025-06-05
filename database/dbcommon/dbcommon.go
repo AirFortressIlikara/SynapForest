@@ -1,8 +1,8 @@
 /*
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
- * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:51:23
+ * @LastEditors: Ilikara 3435193369@qq.com
+ * @LastEditTime: 2025-06-06 00:14:40
  * @FilePath: /SynapForest/database/dbcommon/dbcommon.go
  * @Description:
  *
@@ -32,8 +32,8 @@ type Tag struct {
 	DeletedAt  gorm.DeletedAt `json:"deleted_at"`  // 删除时间
 
 	ParentID uuid.UUID `json:"parent"`              // 父Tag ID
-	Parent   *Folder   `gorm:"foreignKey:ParentID"` // 父Tag
-	Children []Folder  `gorm:"foreignKey:ParentID"` // 子Tag
+	Parent   *Tag      `gorm:"foreignKey:ParentID"` // 父Tag
+	Children []Tag     `gorm:"foreignKey:ParentID"` // 子Tag
 
 	Name        string `json:"name"`
 	Description string `json:"description"`
