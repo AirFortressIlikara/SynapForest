@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 07:05:12
+ * @LastEditTime: 2025-06-06 08:15:47
  * @FilePath: /SynapForest/database/database.go
  * @Description:
  *
@@ -99,6 +99,21 @@ func GetItemIDsByFolder(db *gorm.DB, folderID uuid.UUID) ([]string, error) {
 
 	err := db.Table("item_folders").
 		Where("folder_id = ?", folderID).
+		Pluck("item_id", &itemIDs).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return itemIDs, nil
+}
+
+// GetItemIDsByTag 查询指定标签下所有图片的 ID
+func GetItemIDsByTag(db *gorm.DB, tagID uuid.UUID) ([]string, error) {
+	var itemIDs []string
+
+	err := db.Table("item_tags").
+		Where("folder_id = ?", tagID).
 		Pluck("item_id", &itemIDs).Error
 
 	if err != nil {

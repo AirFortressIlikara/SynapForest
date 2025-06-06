@@ -2,7 +2,7 @@
  * @Author: Ilikara 3435193369@qq.com
  * @Date: 2025-01-09 19:59:53
  * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:51:53
+ * @LastEditTime: 2025-06-06 08:16:39
  * @FilePath: /SynapForest/main.go
  * @Description:
  *
@@ -25,6 +25,7 @@ import (
 	"synapforest/api/folderapi"
 	"synapforest/api/graphql"
 	"synapforest/api/itemapi"
+	"synapforest/api/tagapi"
 	"synapforest/api/vectorapi"
 	"synapforest/database"
 
@@ -73,10 +74,11 @@ func main() {
 		privateRoutes.POST("/folder/updateParent", folderapi.UpdateFoldersParent)
 		privateRoutes.POST("/folder/delete", folderapi.DeleteFolder)
 
-		// 预想tag和folder逻辑一致
-		privateRoutes.POST("/tag/create", folderapi.CreateFolder)
-		privateRoutes.POST("/tag/list", folderapi.ListFolder)
-		privateRoutes.POST("/tag/update", folderapi.UpdateFolder)
+		privateRoutes.POST("/tag/create", tagapi.CreateTag)
+		privateRoutes.POST("/tag/list", tagapi.ListTag)
+		privateRoutes.POST("/tag/update", tagapi.UpdateTag)
+		privateRoutes.POST("/tag/updateParent", tagapi.UpdateTagsParent)
+		privateRoutes.POST("/tag/delete", tagapi.DeleteTag)
 
 		privateRoutes.POST("/item/addFromUrls", itemapi.AddFromUrls)
 		privateRoutes.POST("/item/addFromPaths", itemapi.AddFromPaths)
