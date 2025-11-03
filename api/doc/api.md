@@ -1,11 +1,4 @@
 <!--
- * @Author: Ilikara 3435193369@qq.com
- * @Date: 2025-01-20 13:10:40
- * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:51:06
- * @FilePath: /SynapForest/api/doc/api.md
- * @Description: 
- * 
  * Copyright (c) 2025 AirFortressIlikara
  * SynapForest is licensed under Mulan PubL v2.
  * You can use this software according to the terms and conditions of the Mulan PubL v2.

@@ -1,11 +1,4 @@
 /*
- * @Author: Ilikara 3435193369@qq.com
- * @Date: 2025-01-09 19:59:53
- * @LastEditors: Ilikara 3435193369@qq.com
- * @LastEditTime: 2025-06-06 00:14:40
- * @FilePath: /SynapForest/database/dbcommon/dbcommon.go
- * @Description:
- *
  * Copyright (c) 2025 AirFortressIlikara
  * SynapForest is licensed under Mulan PubL v2.
  * You can use this software according to the terms and conditions of the Mulan PubL v2.

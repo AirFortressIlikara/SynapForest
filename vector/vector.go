@@ -1,11 +1,4 @@
 /*
- * @Author: Ilikara 3435193369@qq.com
- * @Date: 2025-02-02 17:13:19
- * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:52:43
- * @FilePath: /SynapForest/vector/vector.go
- * @Description:
- *
  * Copyright (c) 2025 AirFortressIlikara
  * SynapForest is licensed under Mulan PubL v2.
  * You can use this software according to the terms and conditions of the Mulan PubL v2.

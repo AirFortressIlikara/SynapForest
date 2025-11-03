@@ -1,11 +1,4 @@
 /*
- * @Author: Ilikara 3435193369@qq.com
- * @Date: 2025-01-10 15:53:51
- * @LastEditors: ilikara 3435193369@qq.com
- * @LastEditTime: 2025-04-15 06:51:33
- * @FilePath: /SynapForest/database/itemdb/itemdb.go
- * @Description:
- *
  * Copyright (c) 2025 AirFortressIlikara
  * SynapForest is licensed under Mulan PubL v2.
  * You can use this software according to the terms and conditions of the Mulan PubL v2.
@@ -219,6 +212,7 @@ func AddItem(db *gorm.DB, path string, name *string, url *string, annotation *st
 		return fmt.Errorf("failed to calculate file ID: %v", err)
 	}
 
+	// 检查重复文件
 	var existingItem dbcommon.Item
 	err = db.Unscoped().First(&existingItem, "id = ?", fileID).Error
 	if err == nil {
