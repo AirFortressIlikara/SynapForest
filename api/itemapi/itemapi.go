@@ -12,6 +12,7 @@
 package itemapi
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,7 +22,9 @@ import (
 	"strings"
 	"synapforest/api"
 	"synapforest/database"
+	"synapforest/database/dbcommon"
 	"synapforest/database/itemdb"
+	"synapforest/database/tagdb"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -68,11 +71,12 @@ func AddFromUrls(c *gin.Context) {
 			Name             *string           `json:"name"`                   // 图片名称
 			Website          *string           `json:"website"`                // 来源网址
 			Annotation       *string           `json:"annotation"`             // 注释
-			Tags             []uuid.UUID       `json:"tags"`                   // 标签
+			Tags             []string          `json:"tags"`                   // 标签
 			ModificationTime *time.Time        `json:"modificationTime"`       // 修改时间
 			Headers          map[string]string `json:"headers"`                // 自定义 HTTP headers
 		} `json:"items" binding:"required"` // 图片信息列表
-		FolderIDs []uuid.UUID `json:"folderIds"` // 可选，文件夹 ID
+		TagMode   *string  `json:"tag_mode"`  // 标签模式："uuid" 或 "name"
+		FolderIDs []string `json:"folderIds"` // 可选，文件夹 ID
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -83,6 +87,23 @@ func AddFromUrls(c *gin.Context) {
 		return
 	}
 
+	var folderUUIDs []uuid.UUID
+	if req.FolderIDs != nil { // 只有当 Folders 不为 nil 时才进行转换
+		for _, folderStr := range req.FolderIDs {
+			folderUUID, err := uuid.FromString(folderStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status":  "error",
+					"message": fmt.Sprintf("Invalid folder UUID: %v", folderStr),
+				})
+				return
+			}
+			folderUUIDs = append(folderUUIDs, folderUUID)
+		}
+	} else {
+		folderUUIDs = nil
+	}
+
 	for _, item := range req.Items {
 		filePath, err := saveFileFromURL(item.URL, item.Headers)
 		if err != nil {
@@ -91,8 +112,66 @@ func AddFromUrls(c *gin.Context) {
 		}
 		defer os.Remove(filePath)
 
+		if req.TagMode == nil {
+			*req.TagMode = "uuid"
+		}
+		var tagUUIDs []uuid.UUID
+		if item.Tags != nil {
+			switch strings.ToLower(*req.TagMode) {
+			case "uuid":
+				// UUID模式 - 直接转换
+				for _, tagStr := range item.Tags {
+					tagUUID, err := uuid.FromString(tagStr)
+					if err != nil {
+						c.JSON(http.StatusBadRequest, gin.H{
+							"status":  "error",
+							"message": fmt.Sprintf("Invalid tag UUID: %v", tagStr),
+						})
+						return
+					}
+					tagUUIDs = append(tagUUIDs, tagUUID)
+				}
+			case "name":
+				// 名称模式 - 查找或创建标签
+				for _, tagName := range item.Tags {
+					// 首先尝试查找现有标签
+					var existingTag dbcommon.Tag
+					result := database.DB.Where("name = ?", tagName).First(&existingTag)
+
+					if result.Error == nil {
+						// 找到现有标签
+						tagUUIDs = append(tagUUIDs, existingTag.ID)
+					} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+						// 标签不存在，创建新标签
+						newTag, err := tagdb.CreateTag(database.DB, &tagName, "", 0, 0, uuid.Nil, false)
+						if err != nil {
+							c.JSON(http.StatusInternalServerError, gin.H{
+								"status":  "error",
+								"message": fmt.Sprintf("Failed to create new tag: %v", err),
+							})
+							return
+						}
+						tagUUIDs = append(tagUUIDs, newTag.ID)
+					} else {
+						// 其他数据库错误
+						c.JSON(http.StatusInternalServerError, gin.H{
+							"status":  "error",
+							"message": fmt.Sprintf("Failed to query tag: %v", result.Error),
+						})
+						return
+					}
+				}
+			default:
+				c.JSON(http.StatusBadRequest, gin.H{
+					"status":  "error",
+					"message": "Invalid tag_mode, must be 'uuid' or 'name'",
+				})
+				return
+			}
+		}
+
 		star := uint8(0)
-		err = itemdb.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, item.Tags, req.FolderIDs, &star, item.ModificationTime)
+		err = itemdb.AddItem(database.DB, filePath, item.Name, item.Website, item.Annotation, tagUUIDs, folderUUIDs, &star, item.ModificationTime)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to add item: %v", err)})
 			return
@@ -244,6 +323,7 @@ func Update(c *gin.Context) {
 		URL        *string    `json:"url"`                   // 图片链接
 		Annotation *string    `json:"annotation"`            // 注释
 		Tags       []string   `json:"tags"`                  // 标签
+		TagMode    *string    `json:"tag_mode"`              // 标签模式："uuid" 或 "name"
 		Folders    []string   `json:"folders"`               // 文件夹
 		Star       *uint8     `json:"star"`                  // 星级评分
 		CreatedAt  *time.Time `json:"createdAt"`             // 创建时间
@@ -257,21 +337,62 @@ func Update(c *gin.Context) {
 		return
 	}
 
+	if req.TagMode == nil {
+		*req.TagMode = "uuid"
+	}
 	var tagUUIDs []uuid.UUID
 	if req.Tags != nil {
-		for _, tagStr := range req.Tags {
-			tagUUID, err := uuid.FromString(tagStr)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{
-					"status":  "error",
-					"message": fmt.Sprintf("Invalid tag UUID: %v", tagStr),
-				})
-				return
+		switch strings.ToLower(*req.TagMode) {
+		case "uuid":
+			// UUID模式 - 直接转换
+			for _, tagStr := range req.Tags {
+				tagUUID, err := uuid.FromString(tagStr)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"status":  "error",
+						"message": fmt.Sprintf("Invalid tag UUID: %v", tagStr),
+					})
+					return
+				}
+				tagUUIDs = append(tagUUIDs, tagUUID)
 			}
-			tagUUIDs = append(tagUUIDs, tagUUID)
+		case "name":
+			// 名称模式 - 查找或创建标签
+			for _, tagName := range req.Tags {
+				// 首先尝试查找现有标签
+				var existingTag dbcommon.Tag
+				result := database.DB.Where("name = ?", tagName).First(&existingTag)
+
+				if result.Error == nil {
+					// 找到现有标签
+					tagUUIDs = append(tagUUIDs, existingTag.ID)
+				} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+					// 标签不存在，创建新标签
+					newTag, err := tagdb.CreateTag(database.DB, &tagName, "", 0, 0, uuid.Nil, false)
+					if err != nil {
+						c.JSON(http.StatusInternalServerError, gin.H{
+							"status":  "error",
+							"message": fmt.Sprintf("Failed to create new tag: %v", err),
+						})
+						return
+					}
+					tagUUIDs = append(tagUUIDs, newTag.ID)
+				} else {
+					// 其他数据库错误
+					c.JSON(http.StatusInternalServerError, gin.H{
+						"status":  "error",
+						"message": fmt.Sprintf("Failed to query tag: %v", result.Error),
+					})
+					return
+				}
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "Invalid tag_mode, must be 'uuid' or 'name'",
+			})
+			return
 		}
-	} else {
-		tagUUIDs = nil
 	}
 
 	var folderUUIDs []uuid.UUID
